@@ -226,13 +226,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         bool IsFittingEntity(Entity entity)
         {
             return entity?.Path is { } path &&
-                   (Settings.ClickQuestChests && path.StartsWith("Metadata/Chests/QuestChests/", StringComparison.Ordinal) ||
-                    path.StartsWith("Metadata/Chests/LeaguesExpedition/", StringComparison.Ordinal) ||
-                    path.StartsWith("Metadata/Chests/LegionChests/", StringComparison.Ordinal) ||
-                    path.StartsWith("Metadata/Chests/Blight", StringComparison.Ordinal) ||
-                    path.StartsWith("Metadata/Chests/TraitorsPassageChest", StringComparison.Ordinal) ||
-                    path.StartsWith("Metadata/Chests/Breach/", StringComparison.Ordinal) ||
-                    path.StartsWith("Metadata/Chests/IncursionChest", StringComparison.Ordinal)) &&
+                   (Settings.ClickChests && path.StartsWith("Metadata/Chests", StringComparison.Ordinal)) &&
                    entity.HasComponent<Chest>();
         }
 
