@@ -475,13 +475,13 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickDoors)
             {
-                var chestLabel = _doorLabels?.Value.FirstOrDefault(x =>
+                var doorLabel = _doorLabels?.Value.FirstOrDefault(x =>
                     x.ItemOnGround.DistancePlayer < Settings.PickupRange &&
                     IsLabelClickable(x.Label, null));
 
-                if (chestLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= chestLabel.ItemOnGround.DistancePlayer))
+                if (doorLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= doorLabel.ItemOnGround.DistancePlayer))
                 {
-                    await PickAsync(chestLabel.ItemOnGround, chestLabel.Label, null, _doorLabels.ForceUpdate);
+                    await PickAsync(doorLabel.ItemOnGround, doorLabel.Label, null, _doorLabels.ForceUpdate);
                     return true;
                 }
             }
