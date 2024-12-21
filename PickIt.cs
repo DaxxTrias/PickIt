@@ -35,6 +35,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private SyncTask<bool> _pickUpTask;
     private long _lastClick;
     private List<ItemFilter> _itemFilters;
+    private List<ItemFilter> _chestItemFilters;
     private bool _pluginBridgeModeOverride;
     private bool[,] InventorySlots => _inventorySlotsCache.Value;
     private readonly Stopwatch _sinceLastClick = Stopwatch.StartNew();
@@ -64,6 +65,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         Settings.ReloadFilters.OnPressed = LoadRuleFiles;
         LoadRuleFiles();
+        LoadChestRuleFiles();
         GameController.PluginBridge.SaveMethod("PickIt.ListItems", () => GetItemsToPickup(false).Select(x => x.QueriedItem).ToList());
         GameController.PluginBridge.SaveMethod("PickIt.IsActive", () => _pickUpTask?.GetAwaiter().IsCompleted == false);
         GameController.PluginBridge.SaveMethod("PickIt.SetWorkMode", (bool running) => { _pluginBridgeModeOverride = running; });
@@ -221,6 +223,11 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         return Settings.PickUpEverything || (_itemFilters?.Any(filter => filter.Matches(item)) ?? false);
     }
 
+    private bool DoWePickThisChest(Entity chest)
+    {
+        return _chestItemFilters?.Any(filter => filter.Matches(new ItemData(chest, GameController))) ?? false;
+    }
+
     private List<LabelOnGround> UpdateChestList()
     {
         bool IsFittingEntity(Entity entity)
@@ -233,7 +240,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     path.StartsWith("Metadata/Chests/TraitorsPassageChest", StringComparison.Ordinal) ||
                     path.StartsWith("Metadata/Chests/Breach/", StringComparison.Ordinal) ||
                     path.StartsWith("Metadata/Chests/IncursionChest", StringComparison.Ordinal)) &&
-                   entity.HasComponent<Chest>();
+                   entity.HasComponent<Chest>() &&
+                   DoWePickThisChest(entity);
         }
 
         if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
@@ -418,6 +426,57 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         catch (Exception ex)
         {
             LogError($"[Pickit] Error loading filters: {ex}.", 15);
+        }
+    }
+
+    private void LoadChestRuleFiles()
+    {
+        var pickitConfigFileDirectory = ConfigDirectory;
+        var existingRules = Settings.PickitRules;
+
+        if (!string.IsNullOrEmpty(Settings.CustomConfigDir))
+        {
+            var customConfigFileDirectory = Path.Combine(Path.GetDirectoryName(ConfigDirectory), Settings.CustomConfigDir);
+
+            if (Directory.Exists(customConfigFileDirectory))
+            {
+                pickitConfigFileDirectory = customConfigFileDirectory;
+            }
+            else
+            {
+                DebugWindow.LogError("[Pickit] custom config folder does not exist.", 15);
+            }
+        }
+
+        try
+        {
+            var newRules = new DirectoryInfo(pickitConfigFileDirectory).GetFiles("*.ifl")
+                .Select(x => new PickitRule(x.Name, Path.GetRelativePath(pickitConfigFileDirectory, x.FullName), false))
+                .ExceptBy(existingRules.Select(x => x.Location), x => x.Location)
+                .ToList();
+            foreach (var groundRule in existingRules)
+            {
+                var fullPath = Path.Combine(pickitConfigFileDirectory, groundRule.Location);
+                if (File.Exists(fullPath))
+                {
+                    newRules.Add(groundRule);
+                }
+                else
+                {
+                    LogError($"File '{groundRule.Name}' not found.");
+                }
+            }
+
+            _chestItemFilters = newRules
+                .Where(rule => rule.Enabled)
+                .Select(rule => ItemFilter.LoadFromPath(Path.Combine(pickitConfigFileDirectory, rule.Location)))
+                .ToList();
+
+            Settings.PickitRules = newRules;
+        }
+        catch (Exception ex)
+        {
+            LogError($"[Pickit] Error loading chest filters: {ex}.", 15);
         }
     }
 
