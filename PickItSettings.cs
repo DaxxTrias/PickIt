@@ -45,6 +45,7 @@ public class PickItSettings : ISettings
     [JsonIgnore]
     public FilterNode Filters { get; } = new FilterNode();
 
+    [Menu(null, "For debugging. Highlights items if they match an existing filter")]
     [JsonIgnore]
     public ToggleNode DebugHighlight { get; set; } = new ToggleNode(false);
 }
