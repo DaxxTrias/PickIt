@@ -227,6 +227,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     {
         bool IsFittingEntity(Entity entity)
         {
+            //todo: might need to bring back quest chests. poison from venom crypts A3 might constitute a chest (or maybe its a corpse?)
             return entity?.Path is { } path &&
                    (path.StartsWith("Metadata/Chests", StringComparison.Ordinal)) &&
                    entity.HasComponent<Chest>();
