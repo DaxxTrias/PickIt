@@ -250,9 +250,10 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     {
         bool IsFittingEntity(Entity entity)
         {
-            return entity?.Path is { } path &&
-                   (path.Contains("DoorRandom", StringComparison.Ordinal) ||
-                   path.Contains("Door", StringComparison.Ordinal));
+            return entity?.Path is { } path && (
+                    path.Contains("DoorRandom", StringComparison.Ordinal) ||
+                    path.Contains("Door", StringComparison.Ordinal) ||
+                    path.Contains("WaterLevelLever", StringComparison.Ordinal));
         }
 
         if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
