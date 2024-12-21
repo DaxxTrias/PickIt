@@ -462,19 +462,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
             }
 
-            if (Settings.ClickChests)
-            {
-                var chestLabel = _chestLabels?.Value.FirstOrDefault(x =>
-                    x.ItemOnGround.DistancePlayer < Settings.PickupRange &&
-                    IsLabelClickable(x.Label, null));
-
-                if (chestLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= chestLabel.ItemOnGround.DistancePlayer))
-                {
-                    await PickAsync(chestLabel.ItemOnGround, chestLabel.Label, null, _chestLabels.ForceUpdate);
-                    return true;
-                }
-            }
-
             if (Settings.ClickDoors)
             {
                 var doorLabel = _doorLabels?.Value.FirstOrDefault(x =>
@@ -484,6 +471,19 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 if (doorLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= doorLabel.ItemOnGround.DistancePlayer))
                 {
                     await PickAsync(doorLabel.ItemOnGround, doorLabel.Label, null, _doorLabels.ForceUpdate);
+                    return true;
+                }
+            }
+
+            if (Settings.ClickChests)
+            {
+                var chestLabel = _chestLabels?.Value.FirstOrDefault(x =>
+                    x.ItemOnGround.DistancePlayer < Settings.PickupRange &&
+                    IsLabelClickable(x.Label, null));
+
+                if (chestLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= chestLabel.ItemOnGround.DistancePlayer))
+                {
+                    await PickAsync(chestLabel.ItemOnGround, chestLabel.Label, null, _chestLabels.ForceUpdate);
                     return true;
                 }
             }
