@@ -226,7 +226,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         bool IsFittingEntity(Entity entity)
         {
             return entity?.Path is { } path &&
-                   entity.HasComponent<Chest>();
+                   entity.HasComponent<Chest>() &&
+                   MatchesAnyLoadedFilter(entity);
         }
 
         if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
@@ -246,7 +247,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     {
         bool IsFittingEntity(Entity entity)
         {
-            return entity?.Path is "Metadata/Terrain/Leagues/Necropolis/Objects/NecropolisCorpseMarker";
+            return entity?.Path is { } path &&
+                   MatchesAnyLoadedFilter(entity);
         }
 
         if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
@@ -260,6 +262,11 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         }
 
         return [];
+    }
+
+    private bool MatchesAnyLoadedFilter(Entity entity)
+    {
+        return _itemFilters?.Any(filter => filter.Matches(new ItemData(entity, GameController))) ?? false;
     }
 
     private bool CanLazyLoot()
