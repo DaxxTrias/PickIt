@@ -225,7 +225,17 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool DoWePickThisChest(Entity chest)
     {
-        return _chestItemFilters?.Any(filter => filter.Matches(new ItemData(chest, GameController))) ?? false;
+        var chestPath = chest.Path;
+        var result = _chestItemFilters?.Any(filter => filter.Matches(new ItemData(chest, GameController))) ?? false;
+        if (!result)
+        {
+            LogMessage($"Chest {chestPath} did not match any filters.", 5);
+        }
+        else
+        {
+            LogMessage($"Chest {chestPath} matched a filter.", 5);
+        }
+        return result;
     }
 
     private List<LabelOnGround> UpdateChestList()
