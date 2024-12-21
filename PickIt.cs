@@ -157,6 +157,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             foreach (var item in GetItemsToPickup(false))
             {
                 Graphics.DrawFrame(item.QueriedItem.ClientRect, Color.Violet, 5);
+                LogMessage($"DebugHighlight: Highlighting item {item.BaseName} at {item.QueriedItem.ClientRect}");
             }
         }
         
@@ -277,6 +278,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         catch (NullReferenceException)
         {
         }
+        LogMessage("LazyLooting: Conditions met for lazy looting.");
 
         return true;
     }
@@ -424,6 +426,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         var workMode = GetWorkMode();
         if (workMode == WorkMode.Manual || workMode == WorkMode.Lazy && ShouldLazyLoot(pickUpThisItem))
         {
+            LogMessage($"LazyLooting: Attempting to pick up item {pickUpThisItem?.BaseName} at {pickUpThisItem?.QueriedItem.ClientRect}");
             if (Settings.ItemizeCorpses)
             {
                 var corpseLabel = _corpseLabels?.Value.FirstOrDefault(x =>
@@ -464,17 +467,30 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private IEnumerable<PickItItemData> GetItemsToPickup(bool filterAttempts)
     {
+        LogMessage("GetItemsToPickup: Start");
+
         var labels = GameController.Game.IngameState.IngameUi.ItemsOnGroundLabelElement.VisibleGroundItemLabels?
-            .Where(x=> x.Entity?.DistancePlayer is {} distance && distance < Settings.PickupRange)
+            .Where(x => x.Entity?.DistancePlayer is { } distance && distance < Settings.PickupRange)
             .OrderBy(x => x.Entity?.DistancePlayer ?? int.MaxValue);
 
-        return labels?
+        if (labels == null)
+        {
+            LogMessage("GetItemsToPickup: No labels found");
+            return Enumerable.Empty<PickItItemData>();
+        }
+
+        var items = labels
             .Where(x => x.Entity?.Path != null && IsLabelClickable(x.Label, x.ClientRect))
             .Select(x => new PickItItemData(x, GameController))
             .Where(x => x.Entity != null
                         && (!filterAttempts || x.AttemptedPickups == 0)
                         && DoWePickThis(x)
-                        && (Settings.PickUpWhenInventoryIsFull || CanFitInventory(x))) ?? [];
+                        && (Settings.PickUpWhenInventoryIsFull || CanFitInventory(x)))
+            .ToList();
+
+        LogMessage($"GetItemsToPickup: Found {items.Count} items to pick up");
+
+        return items;
     }
 
     private async SyncTask<bool> PickAsync(Entity item, Element label, RectangleF? customRect, Action onNonClickable)
