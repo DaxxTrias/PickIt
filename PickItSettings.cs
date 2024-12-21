@@ -29,6 +29,7 @@ public class PickItSettings : ISettings
     public HotkeyNode LazyLootingPauseKey { get; set; } = new HotkeyNode(Keys.Space);
     public ToggleNode PickUpEverything { get; set; } = new ToggleNode(false);
     public ToggleNode ClickChests { get; set; } = new ToggleNode(true);
+    public ToggleNode ClickDoors { get; set; } = new ToggleNode(true);
     public ToggleNode ItemizeCorpses { get; set; } = new ToggleNode(true);
 
     [JsonIgnore]
