@@ -220,6 +220,12 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool DoWePickThis(PickItItemData item)
     {
+        if (Settings.NoLootingWhileEnemyClose && GameController.EntityListWrapper.ValidEntitiesByType[EntityType.Monster]
+                    .Any(x => x?.GetComponent<Monster>() != null && x.IsValid && x.IsHostile && x.IsAlive
+                              && !x.IsHidden && !x.Path.Contains("ElementalSummoned")
+                              && Vector3.Distance(GameController.Player.Pos, x.GetComponent<Render>().Pos) < Settings.PickupRange)) 
+                return false;
+
         return Settings.PickUpEverything || (_itemFilters?.Any(filter => filter.Matches(item)) ?? false);
     }
 
