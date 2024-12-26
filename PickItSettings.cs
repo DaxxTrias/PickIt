@@ -27,7 +27,7 @@ public class PickItSettings : ISettings
     public ToggleNode LazyLooting { get; set; } = new ToggleNode(false);
     [Menu("No Lazy Looting While Enemy Close", "Will disable Lazy Looting while enemies close by")]
     public ToggleNode NoLazyLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
-    [Menu("No Looting While Enemy Close", "Will disable keypress pickit looting while enemies close by")]
+    [Menu("No Looting While Enemy Close", "Will disable keypress pickit while enemies close by")]
     public ToggleNode NoLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
     public HotkeyNode LazyLootingPauseKey { get; set; } = new HotkeyNode(Keys.Space);
     public ToggleNode PickUpEverything { get; set; } = new ToggleNode(false);
