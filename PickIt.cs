@@ -231,10 +231,10 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool DoWePickThis(PickItItemData item)
     {
-        if (!IsItSafeToPickit())
+        if (!IsItSafeToPickit() && !Settings.DebugHighlight)
             return false;
-
-        return Settings.PickUpEverything || (_itemFilters?.Any(filter => filter.Matches(item)) ?? false);
+        else
+            return Settings.PickUpEverything || (_itemFilters?.Any(filter => filter.Matches(item)) ?? false);
     }
 
     private List<LabelOnGround> UpdateChestList()
@@ -535,7 +535,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             .Select(x => new PickItItemData(x, GameController))
             .Where(x => x.Entity != null
                         && (!filterAttempts || x.AttemptedPickups == 0)
-                        && DoWePickThis(x)
+                        && (DoWePickThis(x) || Settings.DebugHighlight)
                         && (Settings.PickUpWhenInventoryIsFull || CanFitInventory(x))) ?? [];
     }
 
