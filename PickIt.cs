@@ -343,6 +343,22 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                itemPos.Xy().DistanceSquared(playerPos.Xy()) <= 275 * 275;
     }
 
+    private bool ShouldLazyLootDoorOrChest(LabelOnGround label)
+    {
+        if (!Settings.LazyLooting)
+            return false;
+
+        if (label == null)
+        {
+            return false;
+        }
+
+        var itemPos = label.ItemOnGround.Pos;
+        var playerPos = GameController.Player.Pos;
+        return Math.Abs(itemPos.Z - playerPos.Z) <= 50 &&
+               itemPos.Xy().DistanceSquared(playerPos.Xy()) <= 275 * 275;
+    }
+
     private bool IsLabelClickable(Element element, RectangleF? customRect)
     {
         if (element is not { IsValid: true, IsVisible: true, IndexInParent: not null })
@@ -471,7 +487,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         var pickUpThisItem = GetItemsToPickup(true).FirstOrDefault();
         var workMode = GetWorkMode();
-        if (workMode == WorkMode.Manual || workMode == WorkMode.Lazy && ShouldLazyLoot(pickUpThisItem))
+        if (workMode == WorkMode.Manual || workMode == WorkMode.Lazy && (ShouldLazyLoot(pickUpThisItem) ||
+            ShouldLazyLootDoorOrChest(_doorLabels.Value.FirstOrDefault()) || ShouldLazyLootDoorOrChest(_chestLabels.Value.FirstOrDefault())))
         {
             if (Settings.ItemizeCorpses)
             {
