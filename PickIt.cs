@@ -553,7 +553,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             .Select(x => new PickItItemData(x, GameController))
             .Where(x => x.Entity != null
                         && (!filterAttempts || x.AttemptedPickups == 0)
-                        && (DoWePickThis(x) || Settings.DebugHighlight)
+                        && (DoWePickThis(x) )
                         && (Settings.PickUpWhenInventoryIsFull || CanFitInventory(x))) ?? [];
     }
 
