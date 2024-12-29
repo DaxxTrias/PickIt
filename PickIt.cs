@@ -160,6 +160,14 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             {
                 Graphics.DrawFrame(item.QueriedItem.ClientRect, Color.Violet, 5);
             }
+            foreach (var door in _doorLabels.Value)
+            {
+                Graphics.DrawFrame(door.Label.GetClientRect(), Color.Violet, 5);
+            }
+            foreach (var chest in _chestLabels.Value)
+            {
+                Graphics.DrawFrame(chest.Label.GetClientRect(), Color.Violet, 5);
+            }
         }
         
         if (GetWorkMode() != WorkMode.Stop)
