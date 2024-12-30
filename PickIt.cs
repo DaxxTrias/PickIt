@@ -341,6 +341,18 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool ShouldLazyLoot(PickItItemData item)
     {
+        // this feels stupid why am i doing this
+        //if (Settings.LazyLooting && Settings.ClickDoors)
+        //{
+        //    foreach (var door in _doorLabels.Value)
+        //    {
+        //        if (door.ItemOnGround.DistancePlayer < Settings.PickupRange)
+        //        {
+        //            return true;
+        //        }
+        //    }
+        //}
+
         if (item == null)
         {
             return false;
