@@ -527,6 +527,9 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         {
             if (Settings.ClickCorpses)
             {
+                if (GameController.Area.CurrentArea.IsHideout && !Settings.MiscPickitInHideout)
+                    return false;
+
                 var corpseLabel = _corpseLabels?.Value.FirstOrDefault(x =>
                     x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
                     IsLabelClickable(x.Label, null));
@@ -540,6 +543,9 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickShrines)
             {
+                if (GameController.Area.CurrentArea.IsHideout && !Settings.MiscPickitInHideout)
+                    return false;
+
                 var shrineLabel = _shrineLabels?.Value.FirstOrDefault(x =>
                     x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
                     IsLabelClickable(x.Label, null));
@@ -553,6 +559,9 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickDoors)
             {
+                if (GameController.Area.CurrentArea.IsHideout && !Settings.MiscPickitInHideout)
+                    return false;
+
                 var doorLabel = _doorLabels?.Value.FirstOrDefault(x =>
                     x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
                     IsLabelClickable(x.Label, null));
@@ -566,6 +575,9 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickChests)
             {
+                if (GameController.Area.CurrentArea.IsHideout && !Settings.MiscPickitInHideout)
+                    return false;
+
                 var chestLabel = _chestLabels?.Value.FirstOrDefault(x =>
                     x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
                     IsLabelClickable(x.Label, null));
@@ -579,6 +591,9 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickPortals)
             {
+                if (GameController.Area.CurrentArea.IsHideout && !Settings.MiscPickitInHideout)
+                    return false;
+
                 var portalLabel = _portalLabels?.Value.FirstOrDefault(x =>
                     x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
                     IsLabelClickable(x.Label, null));
@@ -596,6 +611,9 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickTransitions)
             {
+                if (GameController.Area.CurrentArea.IsHideout && !Settings.MiscPickitInHideout)
+                    return false;
+
                 var transitionLabel = _transitionLabel?.Value;
                 if (transitionLabel == null || transitionLabel.ItemOnGround.DistancePlayer > Settings.MiscPickitRange)
                 {
