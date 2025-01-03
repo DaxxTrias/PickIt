@@ -8,6 +8,7 @@ using ExileCore2.Shared.Nodes;
 using ImGuiNET;
 using Newtonsoft.Json;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace PickIt;
 
@@ -20,7 +21,9 @@ public class PickItSettings : ISettings
     public HotkeyNode PickUpKey { get; set; } = Keys.F;
     public ToggleNode PickUpWhenInventoryIsFull { get; set; } = new ToggleNode(false);
     public RangeNode<int> PickupRange { get; set; } = new RangeNode<int>(600, 1, 1000);
+    [Menu("Ignore While Moving", "Will disable pickit whilst moving")]
     public ToggleNode IgnoreMoving { get; set; } = new ToggleNode(false);
+    [ConditionalDisplay(nameof(IgnoreMoving), true)]
     public RangeNode<int> ItemDistanceToIgnoreMoving { get; set; } = new RangeNode<int>(20, 0, 1000);
     public RangeNode<int> PauseBetweenClicks { get; set; } = new RangeNode<int>(100, 0, 500);
     public ToggleNode AutoClickHoveredLootInRange { get; set; } = new ToggleNode(false);
