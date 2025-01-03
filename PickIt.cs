@@ -122,30 +122,30 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         #region HoverPickit
         //todo: auto click hovered loot range might be bugged, doesnt seem to be working
-        if (Settings.AutoClickHoveredLootInRange.Value)
-        {
-            var hoverItemIcon = UIHoverWithFallback.AsObject<HoverItemIcon>();
-            if (hoverItemIcon != null && !GameController.IngameState.IngameUi.InventoryPanel.IsVisible &&
-                !Input.IsKeyDown(Keys.LButton))
-            {
-                if (hoverItemIcon.Item != null && OkayToClick)
-                {
-                    var groundItem =
-                        GameController.IngameState.IngameUi.ItemsOnGroundLabels.FirstOrDefault(e =>
-                            e.Label.Address == hoverItemIcon.Address);
-                    if (groundItem != null)
-                    {
-                        var doWePickThis = Settings.PickUpEverything || (_itemFilters?.Any(filter =>
-                            filter.Matches(new ItemData(groundItem, GameController))) ?? false);
-                        if (doWePickThis && groundItem?.ItemOnGround.DistancePlayer < 20f)
-                        {
-                            _sinceLastClick.Restart();
-                            Input.Click(MouseButtons.Left);
-                        }
-                    }
-                }
-            }
-        }
+        //if (Settings.AutoClickHoveredLootInRange.Value)
+        //{
+        //    var hoverItemIcon = UIHoverWithFallback.AsObject<HoverItemIcon>();
+        //    if (hoverItemIcon != null && !GameController.IngameState.IngameUi.InventoryPanel.IsVisible &&
+        //        !Input.IsKeyDown(Keys.LButton))
+        //    {
+        //        if (hoverItemIcon.Item != null && OkayToClick)
+        //        {
+        //            var groundItem =
+        //                GameController.IngameState.IngameUi.ItemsOnGroundLabels.FirstOrDefault(e =>
+        //                    e.Label.Address == hoverItemIcon.Address);
+        //            if (groundItem != null)
+        //            {
+        //                var doWePickThis = Settings.PickUpEverything || (_itemFilters?.Any(filter =>
+        //                    filter.Matches(new ItemData(groundItem, GameController))) ?? false);
+        //                if (doWePickThis && groundItem?.ItemOnGround.DistancePlayer < 20f)
+        //                {
+        //                    _sinceLastClick.Restart();
+        //                    Input.Click(MouseButtons.Left);
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
         #endregion
 
         _inventoryItems = GameController.Game.IngameState.Data.ServerData.PlayerInventories[0].Inventory;
@@ -610,14 +610,14 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             }
 
             //todo: ignore moving doesnt seem to work? may need some bugfixing
-            if (!Settings.IgnoreMoving && GameController.Player.GetComponent<Actor>().isMoving)
-            {
-                if (item.DistancePlayer > Settings.ItemDistanceToIgnoreMoving.Value)
-                {
-                    await TaskUtils.NextFrame();
-                    continue;
-                }
-            }
+            //if (!Settings.IgnoreMoving && GameController.Player.GetComponent<Actor>().isMoving)
+            //{
+            //    if (item.DistancePlayer > Settings.ItemDistanceToIgnoreMoving.Value)
+            //    {
+            //        await TaskUtils.NextFrame();
+            //        continue;
+            //    }
+            //}
 
             var position = label.GetClientRect().ClickRandom(5, 3) + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
             if (OkayToClick)

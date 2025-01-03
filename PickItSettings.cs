@@ -25,18 +25,18 @@ public class PickItSettings : ISettings
     public RangeNode<int> PickupRange { get; set; } = new RangeNode<int>(600, 1, 1000);
     [Menu("Pause Between Clicks", "How many milliseconds to wait between clicks")]
     public RangeNode<int> PauseBetweenClicks { get; set; } = new RangeNode<int>(100, 0, 500);
-    [Menu("Ignore While Moving", "Will disable pickit whilst moving")]
-    public ToggleNode IgnoreMoving { get; set; } = new ToggleNode(false);
-    [ConditionalDisplay(nameof(IgnoreMoving), true)]
-    public RangeNode<int> ItemDistanceToIgnoreMoving { get; set; } = new RangeNode<int>(20, 0, 1000);
-    public ToggleNode AutoClickHoveredLootInRange { get; set; } = new ToggleNode(false);
+    //[Menu("Ignore While Moving", "Will disable pickit whilst moving")]
+    //public ToggleNode IgnoreMoving { get; set; } = new ToggleNode(false);
+    //[ConditionalDisplay(nameof(IgnoreMoving), true)]
+    //public RangeNode<int> ItemDistanceToIgnoreMoving { get; set; } = new RangeNode<int>(20, 0, 1000);
+    //public ToggleNode AutoClickHoveredLootInRange { get; set; } = new ToggleNode(false);
     public ToggleNode LazyLooting { get; set; } = new ToggleNode(false);
-    [Menu("No Lazy Looting While Enemy Close", "Will disable Lazy Looting while enemies close by")]
     [ConditionalDisplay(nameof(LazyLooting), true)]
+    [Menu("No Lazy Looting While Enemy Close", "Will disable Lazy Looting while enemies close by")]
     public ToggleNode NoLazyLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
-    [Menu("No Looting While Enemy Close", "Will disable pickit while enemies close by (this includes lazylooting as well as manual pickit)")]
     [ConditionalDisplay(nameof(LazyLooting), true)]
     public HotkeyNode LazyLootingPauseKey { get; set; } = new HotkeyNode(Keys.Space);
+    [Menu("No Looting While Enemy Close", "Will disable pickit while enemies close by (this includes lazylooting as well as manual pickit)")]
     public ToggleNode NoLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
     public ToggleNode ClickChests { get; set; } = new ToggleNode(true);
     public ToggleNode ClickDoors { get; set; } = new ToggleNode(true);
