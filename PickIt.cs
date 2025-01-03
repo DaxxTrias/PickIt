@@ -608,6 +608,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 return true;
             }
 
+            //todo: ignore moving doesnt seem to work? may need some bugfixing
             if (!Settings.IgnoreMoving && GameController.Player.GetComponent<Actor>().isMoving)
             {
                 if (item.DistancePlayer > Settings.ItemDistanceToIgnoreMoving.Value)
@@ -647,6 +648,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private async Task<bool> CheckPortal(Element label)
     {
+        //todo: bug with portal clicking. probably metadata change from poe1->poe2
         if (!IsPortalNearby(_portalLabel.Value, label)) return false;
         // in case of portal nearby do extra checks with delays
         if (IsPortalTargeted(_portalLabel.Value))
