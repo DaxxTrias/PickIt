@@ -522,7 +522,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (workMode == WorkMode.Manual || workMode == WorkMode.Lazy && (ShouldLazyLoot(pickUpThisItem) ||
             ShouldLazyLootDoorOrChest(_doorLabels.Value.FirstOrDefault()) || ShouldLazyLootDoorOrChest(_chestLabels.Value.FirstOrDefault())))
         {
-            if (Settings.ItemizeCorpses)
+            if (Settings.ClickCorpses)
             {
                 var corpseLabel = _corpseLabels?.Value.FirstOrDefault(x =>
                     x.ItemOnGround.DistancePlayer < Settings.PickupRange &&

@@ -20,8 +20,10 @@ public class PickItSettings : ISettings
     public HotkeyNode ProfilerHotkey { get; set; } = Keys.None;
     public HotkeyNode PickUpKey { get; set; } = Keys.F;
     public ToggleNode PickUpWhenInventoryIsFull { get; set; } = new ToggleNode(false);
+    public ToggleNode PickUpEverything { get; set; } = new ToggleNode(false);
     [Menu("Item Pickup Range", "Range at which we will attempt to pickup items")]
     public RangeNode<int> PickupRange { get; set; } = new RangeNode<int>(600, 1, 1000);
+    [Menu("Pause Between Clicks", "How many milliseconds to wait between clicks")]
     public RangeNode<int> PauseBetweenClicks { get; set; } = new RangeNode<int>(100, 0, 500);
     [Menu("Ignore While Moving", "Will disable pickit whilst moving")]
     public ToggleNode IgnoreMoving { get; set; } = new ToggleNode(false);
@@ -30,16 +32,17 @@ public class PickItSettings : ISettings
     public ToggleNode AutoClickHoveredLootInRange { get; set; } = new ToggleNode(false);
     public ToggleNode LazyLooting { get; set; } = new ToggleNode(false);
     [Menu("No Lazy Looting While Enemy Close", "Will disable Lazy Looting while enemies close by")]
+    [ConditionalDisplay(nameof(LazyLooting), true)]
     public ToggleNode NoLazyLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
     [Menu("No Looting While Enemy Close", "Will disable pickit while enemies close by (this includes lazylooting as well as manual pickit)")]
-    public ToggleNode NoLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
+    [ConditionalDisplay(nameof(LazyLooting), true)]
     public HotkeyNode LazyLootingPauseKey { get; set; } = new HotkeyNode(Keys.Space);
-    public ToggleNode PickUpEverything { get; set; } = new ToggleNode(false);
+    public ToggleNode NoLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
     public ToggleNode ClickChests { get; set; } = new ToggleNode(true);
     public ToggleNode ClickDoors { get; set; } = new ToggleNode(true);
     [Menu("Click Transitions", "Will click area/zone transitions if enabled")]
     public ToggleNode ClickTransitions { get; set; } = new ToggleNode(true);
-    public ToggleNode ItemizeCorpses { get; set; } = new ToggleNode(true);
+    public ToggleNode ClickCorpses { get; set; } = new ToggleNode(true);
 
     [JsonIgnore]
     public TextNode FilterTest { get; set; } = new TextNode();
