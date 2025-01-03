@@ -343,14 +343,26 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool ShouldLazyLoot(PickItItemData item)
     {
-        if (Settings.LazyLooting && Settings.ClickDoors)
+        if (Settings.LazyLooting)
         {
-            foreach (var door in _doorLabels.Value)
+            if (Settings.ClickDoors)
             {
-                if (door.ItemOnGround.DistancePlayer < 25)
+                foreach (var door in _doorLabels.Value)
+                {
+                    if (door.ItemOnGround.DistancePlayer < 15)
+                    {
+                        return true;
+                    }
+                }
+            }
+            if (Settings.ClickTransitions)
+            {
+                var transitionLabel = _transitionLabel?.Value;
+                if (transitionLabel != null && transitionLabel.ItemOnGround.DistancePlayer < 15)
                 {
                     return true;
                 }
+
             }
         }
         if (item == null)
