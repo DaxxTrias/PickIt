@@ -57,8 +57,8 @@ public class PickItSettings : ISettings
     public ToggleNode ClickCorpses { get; set; } = new ToggleNode(true);
     [Menu("Click Shrines", "Will click shrines if enabled")]
     public ToggleNode ClickShrines { get; set; } = new ToggleNode(true);
-    //[Menu("Click Portals", "Will click portals if enabled")]
-    //public ToggleNode ClickPortals { get; set; } = new ToggleNode(true);
+    [Menu("Click Portals", "Will click portals if enabled")]
+    public ToggleNode ClickPortals { get; set; } = new ToggleNode(true);
 
     [JsonIgnore]
     public TextNode FilterTest { get; set; } = new TextNode();

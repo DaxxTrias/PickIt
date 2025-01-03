@@ -29,7 +29,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 {
     private readonly CachedValue<List<LabelOnGround>> _chestLabels;
     private readonly CachedValue<List<LabelOnGround>> _doorLabels;
-    private readonly CachedValue<LabelOnGround> _portalLabel;
+    private readonly CachedValue<List<LabelOnGround>> _portalLabel;
     private readonly CachedValue<LabelOnGround> _transitionLabel;
     private readonly CachedValue<List<LabelOnGround>> _corpseLabels;
     private readonly CachedValue<List<LabelOnGround>> _shrineLabels;
@@ -51,7 +51,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         _doorLabels = new TimeCache<List<LabelOnGround>>(UpdateDoorList, 200);
         _corpseLabels = new TimeCache<List<LabelOnGround>>(UpdateCorpseList, 200);
         _shrineLabels = new TimeCache<List<LabelOnGround>>(UpdateShrineList, 200);
-        _portalLabel = new TimeCache<LabelOnGround>(() => GetLabel(@"^Metadata/(MiscellaneousObjects|Effects/Microtransactions)/.*Portal"), 200);
+        _portalLabel = new TimeCache<List<LabelOnGround>>(UpdatePortalList, 200);
         _transitionLabel = new TimeCache<LabelOnGround>(() => GetLabel(@"Metadata/MiscellaneousObjects/AreaTransition_Animate"), 200);
     }
 
@@ -325,6 +325,27 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         return [];
     }
+
+    private List<LabelOnGround> UpdatePortalList()
+    {
+        bool IsFittingEntity(Entity entity)
+        {
+            return (bool)(entity?.Path.Contains("Metadata/MiscellaneousObjects/Portal"));
+        }
+        if (!IsItSafeToPickit())
+            return [];
+        if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
+        {
+            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible
+                .Where(x => x.Address != 0 &&
+                            x.IsVisible &&
+                            IsFittingEntity(x.ItemOnGround))
+                .OrderBy(x => x.ItemOnGround.DistancePlayer)
+                .ToList() ?? [];
+        }
+        return [];
+    }
+
     private List<LabelOnGround> UpdateShrineList()
     {
         bool IsFittingEntity(Entity entity)
@@ -430,38 +451,38 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         return gameWindowRect.Contains(center.X, center.Y);
     }
 
-    private bool IsPortalTargeted(LabelOnGround portalLabel)
-    {
-        if (portalLabel == null)
-        {
-            return false;
-        }
+    //private bool IsPortalTargeted(LabelOnGround portalLabel)
+    //{
+    //    if (portalLabel == null)
+    //    {
+    //        return false;
+    //    }
 
-        // extra checks in case of HUD/game update. They are easy on CPU
-        return
-            GameController.IngameState.UIHover.Address == portalLabel.Address ||
-            GameController.IngameState.UIHover.Address == portalLabel.ItemOnGround.Address ||
-            GameController.IngameState.UIHover.Address == portalLabel.Label.Address ||
-            GameController.IngameState.UIHoverElement.Address == portalLabel.Address ||
-            GameController.IngameState.UIHoverElement.Address == portalLabel.ItemOnGround.Address ||
-            GameController.IngameState.UIHoverElement.Address ==
-            portalLabel.Label.Address || // this is the right one
-            GameController.IngameState.UIHoverTooltip.Address == portalLabel.Address ||
-            GameController.IngameState.UIHoverTooltip.Address == portalLabel.ItemOnGround.Address ||
-            GameController.IngameState.UIHoverTooltip.Address == portalLabel.Label.Address ||
-            portalLabel.ItemOnGround?.HasComponent<Targetable>() == true &&
-            portalLabel.ItemOnGround?.GetComponent<Targetable>()?.isTargeted == true;
-    }
+    //    // extra checks in case of HUD/game update. They are easy on CPU
+    //    return
+    //        GameController.IngameState.UIHover.Address == portalLabel.Address ||
+    //        GameController.IngameState.UIHover.Address == portalLabel.ItemOnGround.Address ||
+    //        GameController.IngameState.UIHover.Address == portalLabel.Label.Address ||
+    //        GameController.IngameState.UIHoverElement.Address == portalLabel.Address ||
+    //        GameController.IngameState.UIHoverElement.Address == portalLabel.ItemOnGround.Address ||
+    //        GameController.IngameState.UIHoverElement.Address ==
+    //        portalLabel.Label.Address || // this is the right one
+    //        GameController.IngameState.UIHoverTooltip.Address == portalLabel.Address ||
+    //        GameController.IngameState.UIHoverTooltip.Address == portalLabel.ItemOnGround.Address ||
+    //        GameController.IngameState.UIHoverTooltip.Address == portalLabel.Label.Address ||
+    //        portalLabel.ItemOnGround?.HasComponent<Targetable>() == true &&
+    //        portalLabel.ItemOnGround?.GetComponent<Targetable>()?.isTargeted == true;
+    //}
 
-    private static bool IsPortalNearby(LabelOnGround portalLabel, Element element)
-    {
-        if (portalLabel == null) return false;
-        var rect1 = portalLabel.Label.GetClientRectCache;
-        var rect2 = element.GetClientRectCache;
-        rect1.Inflate(100, 100);
-        rect2.Inflate(100, 100);
-        return rect1.Intersects(rect2);
-    }
+    //private static bool IsPortalNearby(LabelOnGround portalLabel, Element element)
+    //{
+    //    if (portalLabel == null) return false;
+    //    var rect1 = portalLabel.Label.GetClientRectCache;
+    //    var rect2 = element.GetClientRectCache;
+    //    rect1.Inflate(100, 100);
+    //    rect2.Inflate(100, 100);
+    //    return rect1.Intersects(rect2);
+    //}
 
     private LabelOnGround GetLabel(string id)
     {
@@ -614,7 +635,20 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
             }
 
-                if (pickUpThisItem == null)
+            if (Settings.ClickPortals)
+            {
+                var portalLabel = _portalLabel?.Value.FirstOrDefault(x =>
+                    x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
+                    IsLabelClickable(x.Label, null));
+
+                if (portalLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= portalLabel.ItemOnGround.DistancePlayer))
+                {
+                    await PickAsync(portalLabel.ItemOnGround, portalLabel.Label, null, _portalLabel.ForceUpdate);
+                    return true;
+                }
+            }
+
+            if (pickUpThisItem == null)
             {
                 return true;
             }
@@ -671,7 +705,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
                 else
                 {
-                    if (await CheckPortal(label)) return true;
+                    //if (await CheckPortal(label)) 
+                    //    return true;
                     if (!IsTargeted(item, label))
                     {
                         await TaskUtils.NextFrame();
@@ -690,19 +725,20 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         return true;
     }
 
-    private async Task<bool> CheckPortal(Element label)
-    {
-        //todo: bug with portal clicking. probably metadata change from poe1->poe2
-        if (!IsPortalNearby(_portalLabel.Value, label)) return false;
-        // in case of portal nearby do extra checks with delays
-        if (IsPortalTargeted(_portalLabel.Value))
-        {
-            return true;
-        }
+    //private async Task<bool> CheckPortal(Element label)
+    //{
+    //    //todo: bug with portal clicking. probably metadata change from poe1->poe2
+    //    if (!IsPortalNearby(_portalLabel.Value, label)) 
+    //        return false;
+    //    // in case of portal nearby do extra checks with delays
+    //    if (IsPortalTargeted(_portalLabel.Value))
+    //    {
+    //        return true;
+    //    }
 
-        await Task.Delay(25);
-        return IsPortalTargeted(_portalLabel.Value);
-    }
+    //    await Task.Delay(25);
+    //    return IsPortalTargeted(_portalLabel.Value);
+    //}
 
     private static bool IsTargeted(Entity item, Element label)
     {
