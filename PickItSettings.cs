@@ -21,8 +21,8 @@ public class PickItSettings : ISettings
     public HotkeyNode PickUpKey { get; set; } = Keys.F;
     public ToggleNode PickUpWhenInventoryIsFull { get; set; } = new ToggleNode(false);
     public ToggleNode PickUpEverything { get; set; } = new ToggleNode(false);
-    [Menu("Item Pickup Range", "Range at which we will attempt to pickup items")]
-    public RangeNode<int> PickupRange { get; set; } = new RangeNode<int>(600, 1, 1000);
+    [Menu("Item Pickit Range", "Range at which we will attempt to pickit")]
+    public RangeNode<int> ItemPickitRange { get; set; } = new RangeNode<int>(600, 1, 1000);
     [Menu("Pause Between Clicks", "How many milliseconds to wait between clicks")]
     public RangeNode<int> PauseBetweenClicks { get; set; } = new RangeNode<int>(100, 0, 500);
     //[Menu("Ignore While Moving", "Will disable pickit whilst moving")]
@@ -38,11 +38,27 @@ public class PickItSettings : ISettings
     public HotkeyNode LazyLootingPauseKey { get; set; } = new HotkeyNode(Keys.Space);
     [Menu("No Looting While Enemy Close", "Will disable pickit while enemies close by (this includes lazylooting as well as manual pickit)")]
     public ToggleNode NoLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
+    [Menu("Miscellaneous Pickit Options", "Doors, Chests, Corpses, Transitions, Portals, Shrines")]
+    public ToggleNode MiscPickit { get; set; } = new ToggleNode(true);
+    [Menu("Misc Pickit Range", "Range at which we will pickit things that are not items (doors, chests, etc)")]
+    [ConditionalDisplay(nameof(MiscPickit), true)]
+    public RangeNode<int> MiscPickitRange { get; set; } = new RangeNode<int>(15, 0, 600);
+    [ConditionalDisplay(nameof(MiscPickit), true)]
+    [Menu("Click Chests", "Will click chests if enabled")]
     public ToggleNode ClickChests { get; set; } = new ToggleNode(true);
+    [ConditionalDisplay(nameof(MiscPickit), true)]
+    [Menu("Click Doors", "Will click doors if enabled")]
     public ToggleNode ClickDoors { get; set; } = new ToggleNode(true);
     [Menu("Click Transitions", "Will click area/zone transitions if enabled")]
+    [ConditionalDisplay(nameof(MiscPickit), true)]
     public ToggleNode ClickTransitions { get; set; } = new ToggleNode(true);
+    [ConditionalDisplay(nameof(MiscPickit), true)]
+    [Menu("Click Corpses", "Will click corpses if enabled")]
     public ToggleNode ClickCorpses { get; set; } = new ToggleNode(true);
+    //[Menu("Click Shrines", "Will click shrines if enabled")]
+    //public ToggleNode ClickShrines { get; set; } = new ToggleNode(true);
+    //[Menu("Click Portals", "Will click portals if enabled")]
+    //public ToggleNode ClickPortals { get; set; } = new ToggleNode(true);
 
     [JsonIgnore]
     public TextNode FilterTest { get; set; } = new TextNode();
