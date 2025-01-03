@@ -566,7 +566,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 var transitionLabel = _transitionLabel?.Value;
                 if (transitionLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= transitionLabel.ItemOnGround.DistancePlayer))
                 {
-                    await PickAsync(transitionLabel.ItemOnGround, transitionLabel.Label, null, _portalLabel.ForceUpdate);
+                    await PickAsync(transitionLabel.ItemOnGround, transitionLabel.Label, null, _transitionLabel.ForceUpdate);
                     return true;
                 }
             }
