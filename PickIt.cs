@@ -121,6 +121,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             return;
 
         #region HoverPickit
+        //todo: auto click hovered loot range might be bugged, doesnt seem to be working
         if (Settings.AutoClickHoveredLootInRange.Value)
         {
             var hoverItemIcon = UIHoverWithFallback.AsObject<HoverItemIcon>();
