@@ -580,7 +580,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             if (Settings.ClickTransitions)
             {
                 var transitionLabel = _transitionLabel?.Value;
-                if (transitionLabel.ItemOnGround.DistancePlayer > Settings.MiscPickitRange)
+                if (transitionLabel == null || transitionLabel.ItemOnGround.DistancePlayer > Settings.MiscPickitRange)
                 {
                     return false;
                 }
