@@ -32,6 +32,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private readonly CachedValue<LabelOnGround> _portalLabel;
     private readonly CachedValue<LabelOnGround> _transitionLabel;
     private readonly CachedValue<List<LabelOnGround>> _corpseLabels;
+    private readonly CachedValue<List<LabelOnGround>> _shrineLabels;
     private readonly CachedValue<bool[,]> _inventorySlotsCache;
     private ServerInventory _inventoryItems;
     private SyncTask<bool> _pickUpTask;
@@ -49,6 +50,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         _chestLabels = new TimeCache<List<LabelOnGround>>(UpdateChestList, 200);
         _doorLabels = new TimeCache<List<LabelOnGround>>(UpdateDoorList, 200);
         _corpseLabels = new TimeCache<List<LabelOnGround>>(UpdateCorpseList, 200);
+        _shrineLabels = new TimeCache<List<LabelOnGround>>(UpdateShrineList, 200);
         _portalLabel = new TimeCache<LabelOnGround>(() => GetLabel(@"^Metadata/(MiscellaneousObjects|Effects/Microtransactions)/.*Portal"), 200);
         _transitionLabel = new TimeCache<LabelOnGround>(() => GetLabel(@"Metadata/MiscellaneousObjects/AreaTransition_Animate"), 200);
     }
@@ -323,6 +325,28 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         return [];
     }
+    private List<LabelOnGround> UpdateShrineList()
+    {
+        bool IsFittingEntity(Entity entity)
+        {
+            return entity?.Path is "Metadata/Shrines/Shrine";
+        }
+
+        if (!IsItSafeToPickit())
+            return [];
+
+        if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
+        {
+            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible
+                .Where(x => x.Address != 0 &&
+                            x.IsVisible &&
+                            IsFittingEntity(x.ItemOnGround))
+                .OrderBy(x => x.ItemOnGround.DistancePlayer)
+                .ToList() ?? [];
+        }
+
+        return [];
+    }
 
     private bool CanLazyLoot()
     {
@@ -532,6 +556,19 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 if (corpseLabel != null)
                 {
                     await PickAsync(corpseLabel.ItemOnGround, corpseLabel.Label?.GetChildFromIndices(0, 2, 1), null, _corpseLabels.ForceUpdate);
+                    return true;
+                }
+            }
+
+            if (Settings.ClickShrines)
+            {
+                var shrineLabel = _shrineLabels?.Value.FirstOrDefault(x =>
+                    x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
+                    IsLabelClickable(x.Label, null));
+
+                if (shrineLabel != null)
+                {
+                    await PickAsync(shrineLabel.ItemOnGround, shrineLabel.Label?.GetChildFromIndices(0, 2, 1), null, _shrineLabels.ForceUpdate);
                     return true;
                 }
             }
