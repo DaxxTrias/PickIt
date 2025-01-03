@@ -577,6 +577,23 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
             }
 
+            if (Settings.ClickPortals)
+            {
+                var portalLabel = _portalLabels?.Value.FirstOrDefault(x =>
+                    x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
+                    IsLabelClickable(x.Label, null));
+
+                if (portalLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= portalLabel.ItemOnGround.DistancePlayer))
+                {
+                    if (_sinceLastClick.ElapsedMilliseconds < Settings.MiscClickDelay)
+                    {
+                        return false;
+                    }
+                    await PickAsync(portalLabel.ItemOnGround, portalLabel.Label, null, _portalLabels.ForceUpdate);
+                    return true;
+                }
+            }
+
             if (Settings.ClickTransitions)
             {
                 var transitionLabel = _transitionLabel?.Value;
@@ -592,23 +609,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                         return false;
                     }
                     await PickAsync(transitionLabel.ItemOnGround, transitionLabel.Label, null, _transitionLabel.ForceUpdate);
-                    return true;
-                }
-            }
-
-            if (Settings.ClickPortals)
-            {
-                var portalLabel = _portalLabels?.Value.FirstOrDefault(x =>
-                    x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
-                    IsLabelClickable(x.Label, null));
-
-                if (portalLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= portalLabel.ItemOnGround.DistancePlayer))
-                {
-                    if (_sinceLastClick.ElapsedMilliseconds < Settings.MiscClickDelay)
-                    {
-                        return false;
-                    }
-                    await PickAsync(portalLabel.ItemOnGround, portalLabel.Label, null, _portalLabels.ForceUpdate);
                     return true;
                 }
             }
