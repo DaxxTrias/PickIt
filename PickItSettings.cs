@@ -20,12 +20,13 @@ public class PickItSettings : ISettings
     public HotkeyNode ProfilerHotkey { get; set; } = Keys.None;
     public HotkeyNode PickUpKey { get; set; } = Keys.F;
     public ToggleNode PickUpWhenInventoryIsFull { get; set; } = new ToggleNode(false);
+    [Menu("Item Pickup Range", "Range at which we will attempt to pickup items")]
     public RangeNode<int> PickupRange { get; set; } = new RangeNode<int>(600, 1, 1000);
+    public RangeNode<int> PauseBetweenClicks { get; set; } = new RangeNode<int>(100, 0, 500);
     [Menu("Ignore While Moving", "Will disable pickit whilst moving")]
     public ToggleNode IgnoreMoving { get; set; } = new ToggleNode(false);
     [ConditionalDisplay(nameof(IgnoreMoving), true)]
     public RangeNode<int> ItemDistanceToIgnoreMoving { get; set; } = new RangeNode<int>(20, 0, 1000);
-    public RangeNode<int> PauseBetweenClicks { get; set; } = new RangeNode<int>(100, 0, 500);
     public ToggleNode AutoClickHoveredLootInRange { get; set; } = new ToggleNode(false);
     public ToggleNode LazyLooting { get; set; } = new ToggleNode(false);
     [Menu("No Lazy Looting While Enemy Close", "Will disable Lazy Looting while enemies close by")]
