@@ -102,7 +102,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             return WorkMode.Manual;
         }
 
-        if (CanLazyLoot())
+        if (CanLazyLoot() || (Settings.ClickDoors && _doorLabels.Value.Count != 0))
         {
             return WorkMode.Lazy;
         }
@@ -341,22 +341,18 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool ShouldLazyLoot(PickItItemData item)
     {
-        // this feels stupid why am i doing this
-        //if (Settings.LazyLooting && Settings.ClickDoors)
-        //{
-        //    foreach (var door in _doorLabels.Value)
-        //    {
-        //        if (door.ItemOnGround.DistancePlayer < Settings.PickupRange)
-        //        {
-        //            return true;
-        //        }
-        //    }
-        //}
-
-        if (item == null)
+        if (Settings.LazyLooting && Settings.ClickDoors)
         {
-            return false;
+            foreach (var door in _doorLabels.Value)
+            {
+                if (door.ItemOnGround.DistancePlayer < 25)
+                {
+                    return true;
+                }
+            }
         }
+        if (item == null)
+            return false;
 
         var itemPos = item.QueriedItem.Entity.Pos;
         var playerPos = GameController.Player.Pos;
@@ -366,7 +362,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool ShouldLazyLootDoorOrChest(LabelOnGround label)
     {
-        if (!Settings.LazyLooting)
+        if (!Settings.LazyLooting || !Settings.ClickDoors)
             return false;
 
         if (label == null)
