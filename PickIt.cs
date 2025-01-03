@@ -104,7 +104,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             return WorkMode.Manual;
         }
 
-        if (CanLazyLoot() || (Settings.ClickDoors && _doorLabels.Value.Count != 0))
+        if (CanLazyLoot())
         {
             return WorkMode.Lazy;
         }
