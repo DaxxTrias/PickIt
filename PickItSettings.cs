@@ -33,6 +33,8 @@ public class PickItSettings : ISettings
     public ToggleNode PickUpEverything { get; set; } = new ToggleNode(false);
     public ToggleNode ClickChests { get; set; } = new ToggleNode(true);
     public ToggleNode ClickDoors { get; set; } = new ToggleNode(true);
+    [Menu("Click Transitions", "Will click area/zone transitions if enabled")]
+    public ToggleNode ClickTransitions { get; set; } = new ToggleNode(true);
     public ToggleNode ItemizeCorpses { get; set; } = new ToggleNode(true);
 
     [JsonIgnore]
