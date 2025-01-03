@@ -63,7 +63,7 @@ public class PickItSettings : ISettings
     [Menu("Click Portals", "Will click portals if enabled")]
     public ToggleNode ClickPortals { get; set; } = new ToggleNode(true);
     [Menu("Misc Click Delay", "How many milliseconds should pickit wait between clicks for a misc object (portal, doors, etc)")]
-    public RangeNode<int> MiscClickDelay { get; set; } = new RangeNode<int>(5000, 100, 100000);
+    public RangeNode<int> MiscClickDelay { get; set; } = new RangeNode<int>(15000, 100, 100000);
 
     [JsonIgnore]
     public TextNode FilterTest { get; set; } = new TextNode();
