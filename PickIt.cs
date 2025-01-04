@@ -256,7 +256,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         {
             //todo: might need to bring back quest chests. poison from venom crypts A3 might constitute a chest (or maybe its a corpse?)
             return entity?.Path is { } path &&
-                   (path.StartsWith("Metadata/Chests", StringComparison.Ordinal)) &&
+                   (path.StartsWith("Metadata/Chests", StringComparison.Ordinal) ||
+                   path.Contains("CampsiteChest", StringComparison.Ordinal)) &&
                    entity.HasComponent<Chest>();
         }
 
