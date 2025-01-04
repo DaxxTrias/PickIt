@@ -545,7 +545,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         {
             if (Settings.ClickCorpses && Settings.MiscPickit)
             {
-                if (GameController.Area.CurrentArea.IsHideout)
+                if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
                     return false;
 
                 var corpseLabel = _corpseLabels?.Value.FirstOrDefault(x =>
@@ -562,7 +562,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             #region disabled-shrine-clicker
             //if (Settings.ClickShrines && Settings.MiscPickit)
             //{
-            //    if (GameController.Area.CurrentArea.IsHideout && !Settings.MiscPickitInHideout)
+            //    if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
             //        return false;
 
             //    var shrineLabel = _shrineLabels?.Value.FirstOrDefault(x =>
@@ -579,7 +579,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickDoors && Settings.MiscPickit)
             {
-                if (GameController.Area.CurrentArea.IsHideout)
+                if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
                     return false;
 
                 var doorLabel = _doorLabels?.Value.FirstOrDefault(x =>
@@ -595,7 +595,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickChests && Settings.MiscPickit)
             {
-                if (GameController.Area.CurrentArea.IsHideout)
+                if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
                     return false;
 
                 var chestLabel = _chestLabels?.Value.FirstOrDefault(x =>
@@ -611,7 +611,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickPortals && Settings.MiscPickit)
             {
-                if (GameController.Area.CurrentArea.IsHideout)
+                if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
                     return false;
 
                 var portalLabel = _portalLabels?.Value.FirstOrDefault(x =>
@@ -631,7 +631,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickTransitions && Settings.MiscPickit)
             {
-                if (GameController.Area.CurrentArea.IsHideout)
+                if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
                     return false;
 
                 var transitionLabel = _transitionLabel?.Value;
