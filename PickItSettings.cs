@@ -40,9 +40,6 @@ public class PickItSettings : ISettings
     public ToggleNode NoLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
     [Menu("Miscellaneous Pickit Options", "Doors, Chests, Corpses, Transitions, Portals, Shrines")]
     public ToggleNode MiscPickit { get; set; } = new ToggleNode(true);
-    [Menu("Misc Pickit in Hideout", "Should Misc pickit operations run in the hideout? (portals, transitions, etc)")]
-    [ConditionalDisplay(nameof(MiscPickit), true)]
-    public ToggleNode MiscPickitInHideout { get; set; } = new ToggleNode(false);
     [Menu("Misc Pickit Range", "Range at which we will pickit things that are not items (doors, chests, etc)")]
     [ConditionalDisplay(nameof(MiscPickit), true)]
     public RangeNode<int> MiscPickitRange { get; set; } = new RangeNode<int>(15, 0, 600);

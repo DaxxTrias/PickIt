@@ -528,7 +528,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         {
             if (Settings.ClickCorpses)
             {
-                if (GameController.Area.CurrentArea.IsHideout && !Settings.MiscPickitInHideout)
+                if (GameController.Area.CurrentArea.IsHideout)
                     return false;
 
                 var corpseLabel = _corpseLabels?.Value.FirstOrDefault(x =>
@@ -560,7 +560,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickDoors)
             {
-                if (GameController.Area.CurrentArea.IsHideout && !Settings.MiscPickitInHideout)
+                if (GameController.Area.CurrentArea.IsHideout)
                     return false;
 
                 var doorLabel = _doorLabels?.Value.FirstOrDefault(x =>
@@ -576,7 +576,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickChests)
             {
-                if (GameController.Area.CurrentArea.IsHideout && !Settings.MiscPickitInHideout)
+                if (GameController.Area.CurrentArea.IsHideout)
                     return false;
 
                 var chestLabel = _chestLabels?.Value.FirstOrDefault(x =>
@@ -592,7 +592,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickPortals)
             {
-                if (GameController.Area.CurrentArea.IsHideout && !Settings.MiscPickitInHideout)
+                if (GameController.Area.CurrentArea.IsHideout)
                     return false;
 
                 var portalLabel = _portalLabels?.Value.FirstOrDefault(x =>
@@ -612,7 +612,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickTransitions)
             {
-                if (GameController.Area.CurrentArea.IsHideout && !Settings.MiscPickitInHideout)
+                if (GameController.Area.CurrentArea.IsHideout)
                     return false;
 
                 var transitionLabel = _transitionLabel?.Value;
