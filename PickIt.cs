@@ -236,7 +236,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (Settings.NoLootingWhileEnemyClose && GameController.EntityListWrapper.ValidEntitiesByType[EntityType.Monster]
                     .Any(x => x?.GetComponent<Monster>() != null && x.IsValid && x.IsHostile && x.IsAlive
                               && !x.IsHidden && !x.Path.Contains("ElementalSummoned")
-                              && Vector3.Distance(GameController.Player.Pos, x.GetComponent<Render>().Pos) < Settings.ItemPickitRange))
+                              && Vector3.Distance(GameController.Player.Pos, x.GetComponent<Render>().Pos) <= Settings.ItemPickitRange))
             return false;
         else
             return true;
@@ -331,7 +331,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         bool IsFittingEntity(Entity entity)
         {
             return entity?.Path is { } path &&
-                   (path.StartsWith("Metadata/MiscellaneousObjects/Portal", StringComparison.Ordinal)) ||
+                   path.StartsWith("Metadata/MiscellaneousObjects/Portal", StringComparison.Ordinal) ||
                    entity.HasComponent<Portal>();
         }
 
@@ -355,7 +355,9 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     {
         bool IsFittingEntity(Entity entity)
         {
-            return entity?.Path is "Metadata/Shrines/Shrine";
+            return entity?.Path is { } path && 
+                (path.StartsWith("Metadata/Shrines/Shrine", StringComparison.Ordinal)) ||
+                entity.HasComponent<Shrine>();
         }
 
         if (!IsItSafeToPickit())
@@ -413,9 +415,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             return false;
 
         if (label == null)
-        {
             return false;
-        }
 
         var itemPos = label.ItemOnGround.Pos;
         var playerPos = GameController.Player.Pos;
@@ -550,9 +550,9 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
                     IsLabelClickable(x.Label, null));
 
-                if (shrineLabel != null)
+                if (shrineLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= shrineLabel.ItemOnGround.DistancePlayer))
                 {
-                    await PickAsync(shrineLabel.ItemOnGround, shrineLabel.Label?.GetChildFromIndices(0, 2, 1), null, _shrineLabels.ForceUpdate);
+                    await PickAsync(shrineLabel.ItemOnGround, shrineLabel.Label, null, _shrineLabels.ForceUpdate);
                     return true;
                 }
             }
@@ -615,10 +615,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     return false;
 
                 var transitionLabel = _transitionLabel?.Value;
-                if (transitionLabel == null || transitionLabel.ItemOnGround.DistancePlayer > Settings.MiscPickitRange)
-                {
-                    return false;
-                }
 
                 if (transitionLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= transitionLabel.ItemOnGround.DistancePlayer))
                 {
