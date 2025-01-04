@@ -401,6 +401,24 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (!Settings.LazyLooting)
             return false;
 
+        if (Settings.LazyLooting && Settings.MiscPickit && Settings.ClickDoors)
+        {
+            //todo: might be some weird edge case here. doing this for the sole reason of the beaconObject (lost towers objective)
+            foreach (var door in _doorLabels.Value)
+            {
+                //LogMessage($"Checking door label: {door.Label.Address}, Distance: {door.ItemOnGround.DistancePlayer}");
+                var doorLabel = _doorLabels?.Value.FirstOrDefault(x =>
+                    x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
+                    IsLabelClickable(x.Label, null));
+
+                if (doorLabel != null)
+                {
+                    //LogMessage($"Door label found: {doorLabel.Label.Address}, Distance: {doorLabel.ItemOnGround.DistancePlayer}");
+                    return true;
+                }
+            }
+        }
+
         if (item == null)
             return false;
 
@@ -520,7 +538,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         var pickUpThisItem = GetItemsToPickup(true).FirstOrDefault();
         var workMode = GetWorkMode();
         if (workMode == WorkMode.Manual || workMode == WorkMode.Lazy && (ShouldLazyLoot(pickUpThisItem) ||
-            ShouldLazyLootMisc(_doorLabels.Value.FirstOrDefault()) ||
             ShouldLazyLootMisc(_portalLabels.Value.FirstOrDefault()) ||
             ShouldLazyLootMisc(_transitionLabel.Value) ||
             ShouldLazyLootMisc(_shrineLabels.Value.FirstOrDefault()) ||
