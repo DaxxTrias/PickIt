@@ -412,7 +412,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool ShouldLazyLootMisc(LabelOnGround label)
     {
-        if (!Settings.LazyLooting)
+        if (!Settings.LazyLooting && !Settings.MiscPickit)
             return false;
 
         if (label == null)
@@ -526,7 +526,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             ShouldLazyLootMisc(_shrineLabels.Value.FirstOrDefault()) ||
             ShouldLazyLootMisc(_chestLabels.Value.FirstOrDefault())))
         {
-            if (Settings.ClickCorpses)
+            if (Settings.ClickCorpses && Settings.MiscPickit)
             {
                 if (GameController.Area.CurrentArea.IsHideout)
                     return false;
@@ -542,7 +542,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
             }
 
-            //if (Settings.ClickShrines)
+            #region disabled-shrine-clicker
+            //if (Settings.ClickShrines && Settings.MiscPickit)
             //{
             //    if (GameController.Area.CurrentArea.IsHideout && !Settings.MiscPickitInHideout)
             //        return false;
@@ -557,8 +558,9 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             //        return true;
             //    }
             //}
+            #endregion
 
-            if (Settings.ClickDoors)
+            if (Settings.ClickDoors && Settings.MiscPickit)
             {
                 if (GameController.Area.CurrentArea.IsHideout)
                     return false;
@@ -574,7 +576,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
             }
 
-            if (Settings.ClickChests)
+            if (Settings.ClickChests && Settings.MiscPickit)
             {
                 if (GameController.Area.CurrentArea.IsHideout)
                     return false;
@@ -590,7 +592,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
             }
 
-            if (Settings.ClickPortals)
+            if (Settings.ClickPortals && Settings.MiscPickit)
             {
                 if (GameController.Area.CurrentArea.IsHideout)
                     return false;
@@ -610,7 +612,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
             }
 
-            if (Settings.ClickTransitions)
+            if (Settings.ClickTransitions && Settings.MiscPickit)
             {
                 if (GameController.Area.CurrentArea.IsHideout)
                     return false;
