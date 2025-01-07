@@ -36,7 +36,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private readonly CachedValue<bool[,]> _inventorySlotsCache;
     private ServerInventory _inventoryItems;
     private SyncTask<bool> _pickUpTask;
-    private SyncTask<bool> _pickingUpCurrently;
+    private bool _isCurrentlyPicking;
     private long _lastClick;
     private List<ItemFilter> _itemFilters;
     private bool _pluginBridgeModeOverride;
@@ -73,7 +73,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         LoadRuleFiles();
         GameController.PluginBridge.SaveMethod("PickIt.ListItems", () => GetItemsToPickup(false).Select(x => x.QueriedItem).ToList());
         GameController.PluginBridge.SaveMethod("PickIt.IsActive", () => _pickUpTask?.GetAwaiter().IsCompleted == false);
-        GameController.PluginBridge.SaveMethod("PickIt.IsWorking", () => _pickingUpCurrently?.GetAwaiter().IsCompleted == false);
+        GameController.PluginBridge.SaveMethod("PickIt.IsCurrentlyPicking", () => _isCurrentlyPicking);
         GameController.PluginBridge.SaveMethod("PickIt.SetWorkMode", (bool running) => { _pluginBridgeModeOverride = running; });
         return true;
     }
@@ -678,50 +678,60 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private async SyncTask<bool> PickAsync(Entity item, Element label, RectangleF? customRect, Action onNonClickable)
     {
-        var tryCount = 0;
-        while (tryCount < 3)
+        if (Settings.ShouldPickitWarnTheBridge)
+            _isCurrentlyPicking = true;
+        try
         {
-            if (!IsLabelClickable(label, customRect))
+            var tryCount = 0;
+            while (tryCount < 3)
             {
-                onNonClickable();
-                return true;
-            }
-
-            //todo: ignore moving doesnt seem to work? may need some bugfixing
-            //if (!Settings.IgnoreMoving && GameController.Player.GetComponent<Actor>().isMoving)
-            //{
-            //    if (item.DistancePlayer > Settings.ItemDistanceToIgnoreMoving.Value)
-            //    {
-            //        await TaskUtils.NextFrame();
-            //        continue;
-            //    }
-            //}
-
-            var position = label.GetClientRect().ClickRandom(5, 3) + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
-            if (OkayToClick)
-            {
-                if (!IsTargeted(item, label))
+                if (!IsLabelClickable(label, customRect))
                 {
-                    await SetCursorPositionAsync(position, item, label);
+                    onNonClickable();
+                    return true;
                 }
-                else
+
+                //todo: ignore moving doesnt seem to work? may need some bugfixing
+                //if (!Settings.IgnoreMoving && GameController.Player.GetComponent<Actor>().isMoving)
+                //{
+                //    if (item.DistancePlayer > Settings.ItemDistanceToIgnoreMoving.Value)
+                //    {
+                //        await TaskUtils.NextFrame();
+                //        continue;
+                //    }
+                //}
+
+                var position = label.GetClientRect().ClickRandom(5, 3) + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
+                if (OkayToClick)
                 {
                     if (!IsTargeted(item, label))
                     {
-                        await TaskUtils.NextFrame();
-                        continue;
+                        await SetCursorPositionAsync(position, item, label);
                     }
+                    else
+                    {
+                        if (!IsTargeted(item, label))
+                        {
+                            await TaskUtils.NextFrame();
+                            continue;
+                        }
 
-                    Input.Click(MouseButtons.Left);
-                    _sinceLastClick.Restart();
-                    tryCount++;
+                        Input.Click(MouseButtons.Left);
+                        _sinceLastClick.Restart();
+                        tryCount++;
+                    }
                 }
+
+                await TaskUtils.NextFrame();
             }
 
-            await TaskUtils.NextFrame();
+            return true;
         }
-
-        return true;
+        finally
+        {
+            if (Settings.ShouldPickitWarnTheBridge)
+                _isCurrentlyPicking = false;
+        }
     }
 
     private static bool IsTargeted(Entity item, Element label)
