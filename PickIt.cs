@@ -655,6 +655,9 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             }
 
             pickUpThisItem.AttemptedPickups++;
+            if (Settings.ShouldPickitWarnTheBridge)
+                _isCurrentlyPicking = true;
+
             await PickAsync(pickUpThisItem.QueriedItem.Entity, pickUpThisItem.QueriedItem.Label, pickUpThisItem.QueriedItem.ClientRect, () => { });
         }
 
