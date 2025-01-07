@@ -36,6 +36,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private readonly CachedValue<bool[,]> _inventorySlotsCache;
     private ServerInventory _inventoryItems;
     private SyncTask<bool> _pickUpTask;
+    private SyncTask<bool> _pickingUpCurrently;
     private long _lastClick;
     private List<ItemFilter> _itemFilters;
     private bool _pluginBridgeModeOverride;
@@ -72,6 +73,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         LoadRuleFiles();
         GameController.PluginBridge.SaveMethod("PickIt.ListItems", () => GetItemsToPickup(false).Select(x => x.QueriedItem).ToList());
         GameController.PluginBridge.SaveMethod("PickIt.IsActive", () => _pickUpTask?.GetAwaiter().IsCompleted == false);
+        GameController.PluginBridge.SaveMethod("PickIt.IsWorking", () => _pickingUpCurrently?.GetAwaiter().IsCompleted == false);
         GameController.PluginBridge.SaveMethod("PickIt.SetWorkMode", (bool running) => { _pluginBridgeModeOverride = running; });
         return true;
     }
