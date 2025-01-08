@@ -36,7 +36,6 @@ public class PickItSettings : ISettings
     public ToggleNode NoLazyLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
     [ConditionalDisplay(nameof(LazyLooting), true)]
     public HotkeyNode LazyLootingPauseKey { get; set; } = new HotkeyNode(Keys.Space);
-    public ToggleNode ShouldPickitWarnTheBridge { get; set; } = new ToggleNode(true);
     [Menu("No Looting While Enemy Close", "Will disable pickit while enemies close by (this includes lazylooting as well as manual pickit)")]
     public ToggleNode NoLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
     [Menu("Miscellaneous Pickit Options", "Doors, Chests, Corpses, Transitions, Portals, Shrines")]
