@@ -247,7 +247,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool DoWePickThis(PickItItemData item)
     {
-        if (!IsItSafeToPickit() && !Settings.DebugHighlight)
+        if (!IsItSafeToPickit())
             return false;
         else
             return Settings.PickUpEverything || (_itemFilters?.Any(filter => filter.Matches(item)) ?? false);

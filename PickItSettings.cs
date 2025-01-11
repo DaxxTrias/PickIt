@@ -74,8 +74,7 @@ public class PickItSettings : ISettings
     [JsonIgnore]
     public FilterNode Filters { get; } = new FilterNode();
 
-    [Menu("Debug Highlight", "Highlights items which match a filter. " +
-        "Be cautious using this as it will override certain safety checks like nearby enemies")]
+    [Menu(null, "For debugging. Highlights items if they match an existing filter")]
     [JsonIgnore]
     public ToggleNode DebugHighlight { get; set; } = new ToggleNode(false);
 }
