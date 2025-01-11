@@ -565,24 +565,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
             }
 
-            #region disabled-shrine-clicker
-            //if (Settings.ClickShrines && Settings.MiscPickit)
-            //{
-            //    if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
-            //        return false;
-
-            //    var shrineLabel = _shrineLabels?.Value.FirstOrDefault(x =>
-            //        x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
-            //        IsLabelClickable(x.Label, null));
-
-            //    if (shrineLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= shrineLabel.ItemOnGround.DistancePlayer))
-            //    {
-            //        await PickAsync(shrineLabel.ItemOnGround, shrineLabel.Label, null, _shrineLabels.ForceUpdate);
-            //        return true;
-            //    }
-            //}
-            #endregion
-
             if (Settings.ClickDoors && Settings.MiscPickit)
             {
                 if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)

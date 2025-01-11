@@ -55,8 +55,6 @@ public class PickItSettings : ISettings
     [ConditionalDisplay(nameof(MiscPickit), true)]
     [Menu("Click Corpses", "Will click corpses if enabled")]
     public ToggleNode ClickCorpses { get; set; } = new ToggleNode(true);
-    //[Menu("Click Shrines", "Will click shrines if enabled")]
-    //public ToggleNode ClickShrines { get; set; } = new ToggleNode(true);
     [Menu("Click Portals", "Will click portals if enabled")]
     public ToggleNode ClickPortals { get; set; } = new ToggleNode(true);
     [Menu("Misc Click Delay", "How many milliseconds should pickit wait between clicks for a misc object (portal, doors, etc)")]
