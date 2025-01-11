@@ -123,33 +123,30 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (playerInvCount is null or 0)
             return;
 
-        #region HoverPickit
-        //todo: auto click hovered loot range might be bugged, doesnt seem to be working
-        //if (Settings.AutoClickHoveredLootInRange.Value)
-        //{
-        //    var hoverItemIcon = UIHoverWithFallback.AsObject<HoverItemIcon>();
-        //    if (hoverItemIcon != null && !GameController.IngameState.IngameUi.InventoryPanel.IsVisible &&
-        //        !Input.IsKeyDown(Keys.LButton))
-        //    {
-        //        if (hoverItemIcon.Item != null && OkayToClick)
-        //        {
-        //            var groundItem =
-        //                GameController.IngameState.IngameUi.ItemsOnGroundLabels.FirstOrDefault(e =>
-        //                    e.Label.Address == hoverItemIcon.Address);
-        //            if (groundItem != null)
-        //            {
-        //                var doWePickThis = Settings.PickUpEverything || (_itemFilters?.Any(filter =>
-        //                    filter.Matches(new ItemData(groundItem, GameController))) ?? false);
-        //                if (doWePickThis && groundItem?.ItemOnGround.DistancePlayer < 20f)
-        //                {
-        //                    _sinceLastClick.Restart();
-        //                    Input.Click(MouseButtons.Left);
-        //                }
-        //            }
-        //        }
-        //    }
-        //}
-        #endregion
+        if (Settings.AutoClickHoveredLootInRange.Value)
+        {
+            var hoverItemIcon = UIHoverWithFallback.AsObject<HoverItemIcon>();
+            if (hoverItemIcon != null && !GameController.IngameState.IngameUi.InventoryPanel.IsVisible &&
+                !Input.IsKeyDown(Keys.LButton))
+            {
+                if (hoverItemIcon.Item != null && OkayToClick)
+                {
+                    var groundItem =
+                        GameController.IngameState.IngameUi.ItemsOnGroundLabels.FirstOrDefault(e =>
+                            e.Label.Address == hoverItemIcon.Address);
+                    if (groundItem != null)
+                    {
+                        var doWePickThis = Settings.PickUpEverything || (_itemFilters?.Any(filter =>
+                            filter.Matches(new ItemData(groundItem, GameController))) ?? false);
+                        if (doWePickThis && groundItem?.ItemOnGround.DistancePlayer < 20f)
+                        {
+                            _sinceLastClick.Restart();
+                            Input.Click(MouseButtons.Left);
+                        }
+                    }
+                }
+            }
+        }
 
         _inventoryItems = GameController.Game.IngameState.Data.ServerData.PlayerInventories[0].Inventory;
         DrawIgnoredCellsSettings();
@@ -260,7 +257,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     {
         bool IsFittingEntity(Entity entity)
         {
-            //todo: might need to bring back quest chests. poison from venom crypts A3 might constitute a chest (or maybe its a corpse?)
             return entity?.Path is { } path &&
                    (path.StartsWith("Metadata/Chests", StringComparison.Ordinal) ||
                    path.Contains("CampsiteChest", StringComparison.Ordinal)) &&
@@ -409,7 +405,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (Settings.LazyLooting && Settings.MiscPickit && Settings.ClickDoors)
         {
-            //todo: might be some weird edge case here. doing this for the sole reason of the beaconObject (lost towers objective)
             foreach (var door in _doorLabels.Value)
             {
                 //LogMessage($"Checking door label: {door.Label.Address}, Distance: {door.ItemOnGround.DistancePlayer}");
