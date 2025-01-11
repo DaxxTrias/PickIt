@@ -25,11 +25,11 @@ public class PickItSettings : ISettings
     public RangeNode<int> ItemPickitRange { get; set; } = new RangeNode<int>(600, 1, 1000);
     [Menu("Pause Between Clicks", "How many milliseconds to wait between clicks")]
     public RangeNode<int> PauseBetweenClicks { get; set; } = new RangeNode<int>(100, 0, 500);
-    //[Menu("Ignore While Moving", "Will disable pickit whilst moving")]
-    //public ToggleNode IgnoreMoving { get; set; } = new ToggleNode(false);
-    //[ConditionalDisplay(nameof(IgnoreMoving), true)]
-    //public RangeNode<int> ItemDistanceToIgnoreMoving { get; set; } = new RangeNode<int>(20, 0, 1000);
-    //public ToggleNode AutoClickHoveredLootInRange { get; set; } = new ToggleNode(false);
+    [Menu("Ignore While Moving", "Will disable pickit whilst moving")]
+    public ToggleNode IgnoreMoving { get; set; } = new ToggleNode(false);
+    [ConditionalDisplay(nameof(IgnoreMoving), true)]
+    public RangeNode<int> ItemDistanceToIgnoreMoving { get; set; } = new RangeNode<int>(20, 0, 1000);
+    public ToggleNode AutoClickHoveredLootInRange { get; set; } = new ToggleNode(false);
     public ToggleNode LazyLooting { get; set; } = new ToggleNode(false);
     [ConditionalDisplay(nameof(LazyLooting), true)]
     [Menu("No Lazy Looting While Enemy Close", "Will disable Lazy Looting while enemies close by")]

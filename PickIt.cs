@@ -671,15 +671,14 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     return true;
                 }
 
-                //todo: ignore moving doesnt seem to work? may need some bugfixing
-                //if (!Settings.IgnoreMoving && GameController.Player.GetComponent<Actor>().isMoving)
-                //{
-                //    if (item.DistancePlayer > Settings.ItemDistanceToIgnoreMoving.Value)
-                //    {
-                //        await TaskUtils.NextFrame();
-                //        continue;
-                //    }
-                //}
+                if (Settings.IgnoreMoving && GameController.Player.GetComponent<Actor>().isMoving)
+                {
+                    if (item.DistancePlayer > Settings.ItemDistanceToIgnoreMoving.Value)
+                    {
+                        await TaskUtils.NextFrame();
+                        continue;
+                    }
+                }
 
                 var position = label.GetClientRect().ClickRandom(5, 3) + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
                 if (OkayToClick)
