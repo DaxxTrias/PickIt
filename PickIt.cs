@@ -51,7 +51,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         _chestLabels = new TimeCache<List<LabelOnGround>>(UpdateChestList, 200);
         _doorLabels = new TimeCache<List<LabelOnGround>>(UpdateDoorList, 200);
         _corpseLabels = new TimeCache<List<LabelOnGround>>(UpdateCorpseList, 200);
-        _shrineLabels = new TimeCache<List<LabelOnGround>>(UpdateShrineList, 200);
         _portalLabels = new TimeCache<List<LabelOnGround>>(UpdatePortalList, 200);
         _transitionLabel = new TimeCache<LabelOnGround>(() => GetLabel(@"Metadata/MiscellaneousObjects/AreaTransition_Animate"), 200);
     }
@@ -351,31 +350,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 .OrderBy(x => x.ItemOnGround.DistancePlayer)
                 .ToList() ?? [];
         }
-        return [];
-    }
-
-    private List<LabelOnGround> UpdateShrineList()
-    {
-        bool IsFittingEntity(Entity entity)
-        {
-            return entity?.Path is { } path && 
-                (path.StartsWith("Metadata/Shrines/Shrine", StringComparison.Ordinal)) ||
-                entity.HasComponent<Shrine>();
-        }
-
-        if (!IsItSafeToPickit())
-            return [];
-
-        if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
-        {
-            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible
-                .Where(x => x.Address != 0 &&
-                            x.IsVisible &&
-                            IsFittingEntity(x.ItemOnGround))
-                .OrderBy(x => x.ItemOnGround.DistancePlayer)
-                .ToList() ?? [];
-        }
-
         return [];
     }
 
