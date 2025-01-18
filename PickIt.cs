@@ -374,7 +374,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool ShouldLazyLoot(PickItItemData item)
     {
-        if (!Settings.LazyLooting)
+        if (!Settings.LazyLooting || item == null)
             return false;
 
         if (Settings.LazyLooting && Settings.MiscPickit && Settings.ClickDoors)
