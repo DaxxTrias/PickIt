@@ -374,13 +374,15 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool ShouldLazyLoot(PickItItemData item)
     {
-        if (!Settings.LazyLooting || item == null)
+        if (!Settings.LazyLooting)
             return false;
 
-        if (Settings.LazyLooting && Settings.MiscPickit && Settings.ClickDoors)
+        if (Settings.LazyLooting && Settings.MiscPickit && Settings.ClickDoors && _doorLabels != null)
         {
             foreach (var door in _doorLabels.Value)
             {
+                if (door == null)
+                    continue;
                 //LogMessage($"Checking door label: {door.Label.Address}, Distance: {door.ItemOnGround.DistancePlayer}");
                 var doorLabel = _doorLabels?.Value.FirstOrDefault(x =>
                     x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
