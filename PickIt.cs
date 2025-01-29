@@ -379,7 +379,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (Settings.LazyLooting && Settings.MiscPickit && Settings.ClickDoors && _doorLabels != null)
         {
-            foreach (var door in _doorLabels.Value)
+            foreach (var door in _doorLabels?.Value)
             {
                 if (door == null)
                     continue;
@@ -515,17 +515,17 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         var pickUpThisItem = GetItemsToPickup(true).FirstOrDefault();
         var workMode = GetWorkMode();
         if (workMode == WorkMode.Manual || workMode == WorkMode.Lazy && (ShouldLazyLoot(pickUpThisItem) ||
-            ShouldLazyLootMisc(_portalLabels.Value.FirstOrDefault()) ||
-            ShouldLazyLootMisc(_transitionLabel.Value) ||
-            ShouldLazyLootMisc(_shrineLabels.Value.FirstOrDefault()) ||
-            ShouldLazyLootMisc(_chestLabels.Value.FirstOrDefault())))
+            ShouldLazyLootMisc(_portalLabels?.Value?.FirstOrDefault()) ||
+            ShouldLazyLootMisc(_transitionLabel?.Value) ||
+            ShouldLazyLootMisc(_shrineLabels?.Value?.FirstOrDefault()) ||
+            ShouldLazyLootMisc(_chestLabels?.Value?.FirstOrDefault())))
         {
             if (Settings.ClickCorpses && Settings.MiscPickit)
             {
                 if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
                     return false;
 
-                var corpseLabel = _corpseLabels?.Value.FirstOrDefault(x =>
+                var corpseLabel = _corpseLabels?.Value?.FirstOrDefault(x =>
                     x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
                     IsLabelClickable(x.Label, null));
 
@@ -541,7 +541,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
                     return false;
 
-                var doorLabel = _doorLabels?.Value.FirstOrDefault(x =>
+                var doorLabel = _doorLabels?.Value?.FirstOrDefault(x =>
                     x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
                     IsLabelClickable(x.Label, null));
 
@@ -557,7 +557,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
                     return false;
 
-                var chestLabel = _chestLabels?.Value.FirstOrDefault(x =>
+                var chestLabel = _chestLabels?.Value?.FirstOrDefault(x =>
                     x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
                     IsLabelClickable(x.Label, null));
 
@@ -573,7 +573,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
                     return false;
 
-                var portalLabel = _portalLabels?.Value.FirstOrDefault(x =>
+                var portalLabel = _portalLabels?.Value?.FirstOrDefault(x =>
                     x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
                     IsLabelClickable(x.Label, null));
 
