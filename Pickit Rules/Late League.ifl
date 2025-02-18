@@ -12,9 +12,35 @@ BaseName.EndsWith(" Incubator")
 
 BaseName.Contains("Maven's")
 
-IsMap && MapTier >= 14
+MapInfo.IsMap && Rarity == ItemRarity.Unique
 
-IsBlightMap && MapTier >= 13
+MapInfo.OccupiedBy.ElderBoss && MapInfo.Tier >= 14
+
+MapInfo.OccupiedBy.Enslaver && MapInfo.Tier >= 14
+
+MapInfo.OccupiedBy.Constrictor && MapInfo.Tier >= 14
+
+MapInfo.OccupiedBy.Eradicator && MapInfo.Tier >= 14
+
+MapInfo.OccupiedBy.Purifier && MapInfo.Tier >= 14
+
+MapInfo.OccupiedBy.ConquerorBoss && MapInfo.Tier >= 14
+
+MapInfo.OccupiedBy.Baran && MapInfo.Tier >= 14
+
+MapInfo.OccupiedBy.Veritania && MapInfo.Tier >= 14
+
+MapInfo.OccupiedBy.AlHezmin && MapInfo.Tier >= 14
+
+MapInfo.OccupiedBy.Drox && MapInfo.Tier >= 14
+
+MapInfo.Type.Uber && MapInfo.Tier >= 14
+
+MapInfo.Type.Blighted && MapInfo.Tier >= 14
+
+MapInfo.Type.BlightRavaged && MapInfo.Tier >= 14
+
+MapInfo.IsMap && MapInfo.Tier >= 14
 
 ClassName.Contains("Skill Gem") && (ItemQuality >= 10 || GemInfo.Level >= 18)
 
