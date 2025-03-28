@@ -66,7 +66,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         #endregion
 
-        RulesDisplay.LoadAndApplyRules();
+        Task.Run(RulesDisplay.LoadAndApplyRules);
         GameController.PluginBridge.SaveMethod("PickIt.ListItems", () => GetItemsToPickup(false).Select(x => x.QueriedItem).ToList());
         GameController.PluginBridge.SaveMethod("PickIt.IsActive", () => _pickUpTask?.GetAwaiter().IsCompleted == false && _isCurrentlyPicking);
         GameController.PluginBridge.SaveMethod("PickIt.SetWorkMode", (bool running) => { _pluginBridgeModeOverride = running; });
