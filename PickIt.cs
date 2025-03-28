@@ -16,6 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using ExileCore2.PoEMemory;
 using RectangleF = ExileCore2.Shared.RectangleF;
