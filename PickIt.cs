@@ -126,19 +126,24 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (Settings.AutoClickHoveredLootInRange.Value)
         {
             var hoverItemIcon = UIHoverWithFallback.AsObject<HoverItemIcon>();
-            if (hoverItemIcon != null && !GameController.IngameState.IngameUi.InventoryPanel.IsVisible &&
+            if (hoverItemIcon != null && GameController?.IngameState?.IngameUi?.InventoryPanel is { IsVisible: false } &&
                 !Input.IsKeyDown(Keys.LButton))
             {
                 if (hoverItemIcon.Item != null && OkayToClick)
                 {
                     var groundItem =
-                        GameController.IngameState.IngameUi.ItemsOnGroundLabels.FirstOrDefault(e =>
-                            e.Label.Address == hoverItemIcon.Address);
+                        GameController?.IngameState?.IngameUi?.ItemsOnGroundLabels?
+                            .FirstOrDefault(e => e.Label.Address == hoverItemIcon.Address);
                     if (groundItem != null)
                     {
                         var doWePickThis = Settings.PickUpEverything || (_itemFilters?.Any(filter =>
                             filter.Matches(new ItemData(groundItem, GameController))) ?? false);
-                        if (doWePickThis && groundItem?.ItemOnGround.DistancePlayer < 20f)
+                        var distance = groundItem?.ItemOnGround.DistancePlayer ?? float.MaxValue;
+                        if (Input.GetKeyState(Settings.ProfilerHotkey.Value))
+                        {
+                            DebugWindow.LogMsg($"HoverClick check: dist={distance:F1}, range={Settings.ItemPickitRange}, match={doWePickThis}, ok={OkayToClick}");
+                        }
+                        if (doWePickThis && distance <= Settings.ItemPickitRange)
                         {
                             _sinceLastClick.Restart();
                             Input.Click(MouseButtons.Left);
@@ -148,7 +153,10 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             }
         }
 
-        _inventoryItems = GameController.Game.IngameState.Data.ServerData.PlayerInventories[0].Inventory;
+        var inventories = GameController?.Game?.IngameState?.Data?.ServerData?.PlayerInventories;
+        _inventoryItems = inventories != null && inventories.Count > 0 && inventories[0] != null
+            ? inventories[0].Inventory
+            : null;
         DrawIgnoredCellsSettings();
         if (Input.GetKeyState(Settings.LazyLootingPauseKey)) DisableLazyLootingTill = DateTime.Now.AddSeconds(2);
         
@@ -239,6 +247,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (Settings.NoLootingWhileEnemyClose && GameController.EntityListWrapper.ValidEntitiesByType[EntityType.Monster]
                     .Any(x => x?.GetComponent<Monster>() != null && x.IsValid && x.IsHostile && x.IsAlive
                               && !x.IsHidden && !x.Path.Contains("ElementalSummoned")
+                              && x.GetComponent<Render>() != null
                               && Vector3.Distance(GameController.Player.Pos, x.GetComponent<Render>().Pos) <= Settings.ItemPickitRange))
             return false;
         else
@@ -333,9 +342,13 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     {
         bool IsFittingEntity(Entity entity)
         {
-            return entity?.Path is { } path &&
-                   path.StartsWith("Metadata/MiscellaneousObjects/Portal", StringComparison.Ordinal) ||
-                   entity.HasComponent<Portal>();
+            if (entity == null)
+                return false;
+
+            if (entity.Path is { } path && path.StartsWith("Metadata/MiscellaneousObjects/Portal", StringComparison.Ordinal))
+                return true;
+
+            return entity.HasComponent<Portal>();
         }
 
         if (!IsItSafeToPickit())
@@ -386,6 +399,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             if (Settings.NoLazyLootingWhileEnemyClose && GameController.EntityListWrapper.ValidEntitiesByType[EntityType.Monster]
                     .Any(x => x?.GetComponent<Monster>() != null && x.IsValid && x.IsHostile && x.IsAlive
                               && !x.IsHidden && !x.Path.Contains("ElementalSummoned")
+                              && x.GetComponent<Render>() != null
                               && Vector3.Distance(GameController.Player.Pos, x.GetComponent<Render>().Pos) < Settings.ItemPickitRange)) 
                 return false;
         }
@@ -536,6 +550,15 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         LogMessage("RunPickerIterationAsync");
         if (!GameController.Window.IsForeground()) return true;
 
+        // If auto-click-on-hover is enabled and we currently have a hovered item icon,
+        // let the lightweight tick-path handle the click to avoid fighting over the cursor.
+        if (Settings.AutoClickHoveredLootInRange.Value)
+        {
+            var hoverItemIcon = UIHoverWithFallback.AsObject<HoverItemIcon>();
+            if (hoverItemIcon != null && GameController?.IngameState?.IngameUi?.InventoryPanel is { IsVisible: false })
+                return true;
+        }
+
         var pickUpThisItem = GetItemsToPickup(true).FirstOrDefault();
         var workMode = GetWorkMode();
         if (workMode == WorkMode.Manual || workMode == WorkMode.Lazy && (ShouldLazyLoot(pickUpThisItem) ||
@@ -546,7 +569,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         {
             if (Settings.ClickCorpses && Settings.MiscPickit)
             {
-                if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
+                if (GameController.Area?.CurrentArea is { IsHideout: true } or { IsTown: true })
                     return false;
 
                 var corpseLabel = _corpseLabels?.Value.FirstOrDefault(x =>
@@ -562,7 +585,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickDoors && Settings.MiscPickit)
             {
-                if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
+                if (GameController.Area?.CurrentArea is { IsHideout: true } or { IsTown: true })
                     return false;
 
                 var doorLabel = _doorLabels?.Value.FirstOrDefault(x =>
@@ -578,7 +601,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickChests && Settings.MiscPickit)
             {
-                if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
+                if (GameController.Area?.CurrentArea is { IsHideout: true } or { IsTown: true })
                     return false;
 
                 var chestLabel = _chestLabels?.Value.FirstOrDefault(x =>
@@ -594,7 +617,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickPortals && Settings.MiscPickit)
             {
-                if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
+                if (GameController.Area?.CurrentArea is { IsHideout: true } or { IsTown: true })
                     return false;
 
                 var portalLabel = _portalLabels?.Value.FirstOrDefault(x =>
@@ -614,7 +637,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             if (Settings.ClickTransitions && Settings.MiscPickit)
             {
-                if (GameController.Area.CurrentArea.IsHideout || GameController.Area.CurrentArea.IsTown)
+                if (GameController.Area?.CurrentArea is { IsHideout: true } or { IsTown: true })
                     return false;
 
                 var transitionLabel = _transitionLabel?.Value;
@@ -636,7 +659,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             }
 
             pickUpThisItem.AttemptedPickups++;
-            await PickAsync(pickUpThisItem.QueriedItem.Entity, pickUpThisItem.QueriedItem.Label, pickUpThisItem.QueriedItem.ClientRect, () => { });
+            await PickAsync(pickUpThisItem.QueriedItem.Entity, pickUpThisItem.QueriedItem.Label, null, () => { });
         }
 
         return true;
@@ -644,12 +667,12 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private IEnumerable<PickItItemData> GetItemsToPickup(bool filterAttempts)
     {
-        var labels = GameController.Game.IngameState.IngameUi.ItemsOnGroundLabelElement.VisibleGroundItemLabels?
+        var labels = GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelElement?.VisibleGroundItemLabels?
             .Where(x=> x.Entity?.DistancePlayer is {} distance && distance < Settings.ItemPickitRange)
             .OrderBy(x => x.Entity?.DistancePlayer ?? int.MaxValue);
 
         return labels?
-            .Where(x => x.Entity?.Path != null && IsLabelClickable(x.Label, x.ClientRect))
+            .Where(x => x.Entity?.Path != null && IsLabelClickable(x.Label, null))
             .Select(x => new PickItItemData(x, GameController))
             .Where(x => x.Entity != null
                         && (!filterAttempts || x.AttemptedPickups == 0)
@@ -680,7 +703,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     }
                 }
 
-                var position = label.GetClientRect().ClickRandom(5, 3) + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
+                var rect = customRect ?? label.GetClientRect();
+                var position = rect.ClickRandom(5, 3) + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
                 if (OkayToClick)
                 {
                     if (!IsTargeted(item, label))
@@ -689,6 +713,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     }
                     else
                     {
+                       
                         if (!IsTargeted(item, label))
                         {
                             await TaskUtils.NextFrame();
@@ -727,7 +752,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     {
         DebugWindow.LogMsg($"Set cursor pos: {position}");
         Input.SetCursorPos(position);
-        return await TaskUtils.CheckEveryFrame(() => IsTargeted(item, label), new CancellationTokenSource(60).Token);
+        return await TaskUtils.CheckEveryFrame(() => IsTargeted(item, label), new CancellationTokenSource(150).Token);
     }
 
     #endregion
