@@ -309,9 +309,18 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (GameController?.EntityListWrapper?.OnlyValidEntities?.Any(IsFittingEntity) == true)
         {
-            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabels
-                .Where(x => x.Address != 0 &&
-                            IsFittingEntity(x.ItemOnGround))
+            var ui = GameController?.Game?.IngameState?.IngameUi;
+            var visible = ui?.ItemsOnGroundLabelsVisible;
+            if (visible != null)
+            {
+                return visible
+                    .Where(x => x.Address != 0 && x.IsVisible && IsFittingEntity(x.ItemOnGround))
+                    .OrderBy(x => x.ItemOnGround.DistancePlayer)
+                    .ToList() ?? [];
+            }
+
+            return ui?.ItemsOnGroundLabels
+                .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
                 .OrderBy(x => x.ItemOnGround.DistancePlayer)
                 .ToList() ?? [];
         }
@@ -335,9 +344,18 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (GameController?.EntityListWrapper?.OnlyValidEntities?.Any(IsFittingEntity) == true)
         {
-            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabels
-                .Where(x => x.Address != 0 &&
-                            IsFittingEntity(x.ItemOnGround))
+            var ui = GameController?.Game?.IngameState?.IngameUi;
+            var visible = ui?.ItemsOnGroundLabelsVisible;
+            if (visible != null)
+            {
+                return visible
+                    .Where(x => x.Address != 0 && x.IsVisible && IsFittingEntity(x.ItemOnGround))
+                    .OrderBy(x => x.ItemOnGround.DistancePlayer)
+                    .ToList() ?? [];
+            }
+
+            return ui?.ItemsOnGroundLabels
+                .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
                 .OrderBy(x => x.ItemOnGround.DistancePlayer)
                 .ToList() ?? [];
         }
@@ -357,9 +375,18 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (GameController?.EntityListWrapper?.OnlyValidEntities?.Any(IsFittingEntity) == true)
         {
-            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabels
-                .Where(x => x.Address != 0 &&
-                            IsFittingEntity(x.ItemOnGround))
+            var ui = GameController?.Game?.IngameState?.IngameUi;
+            var visible = ui?.ItemsOnGroundLabelsVisible;
+            if (visible != null)
+            {
+                return visible
+                    .Where(x => x.Address != 0 && x.IsVisible && IsFittingEntity(x.ItemOnGround))
+                    .OrderBy(x => x.ItemOnGround.DistancePlayer)
+                    .ToList() ?? [];
+            }
+
+            return ui?.ItemsOnGroundLabels
+                .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
                 .OrderBy(x => x.ItemOnGround.DistancePlayer)
                 .ToList() ?? [];
         }
@@ -386,9 +413,18 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (GameController?.EntityListWrapper?.OnlyValidEntities?.Any(IsFittingEntity) == true)
         {
-            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabels
-                .Where(x => x.Address != 0 &&
-                            IsFittingEntity(x.ItemOnGround))
+            var ui = GameController?.Game?.IngameState?.IngameUi;
+            var visible = ui?.ItemsOnGroundLabelsVisible;
+            if (visible != null)
+            {
+                return visible
+                    .Where(x => x.Address != 0 && x.IsVisible && IsFittingEntity(x.ItemOnGround))
+                    .OrderBy(x => x.ItemOnGround.DistancePlayer)
+                    .ToList() ?? [];
+            }
+
+            return ui?.ItemsOnGroundLabels
+                .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
                 .OrderBy(x => x.ItemOnGround.DistancePlayer)
                 .ToList() ?? [];
         }
@@ -407,9 +443,18 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (GameController?.EntityListWrapper?.OnlyValidEntities?.Any(IsFittingEntity) == true)
         {
-            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabels
-                .Where(x => x.Address != 0 &&
-                            IsFittingEntity(x.ItemOnGround))
+            var ui = GameController?.Game?.IngameState?.IngameUi;
+            var visible = ui?.ItemsOnGroundLabelsVisible;
+            if (visible != null)
+            {
+                return visible
+                    .Where(x => x.Address != 0 && x.IsVisible && IsFittingEntity(x.ItemOnGround))
+                    .OrderBy(x => x.ItemOnGround.DistancePlayer)
+                    .ToList() ?? [];
+            }
+
+            return ui?.ItemsOnGroundLabels
+                .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
                 .OrderBy(x => x.ItemOnGround.DistancePlayer)
                 .ToList() ?? [];
         }
@@ -619,6 +664,11 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 var doorLabel = _doorLabels?.Value.FirstOrDefault(x =>
                     x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange);
 
+                if (Input.GetKeyState(Settings.ProfilerHotkey.Value))
+                {
+                    DebugWindow.LogMsg($"door pick candidate: {(doorLabel != null ? doorLabel.ItemOnGround.Metadata : "<none>")}, dist={doorLabel?.ItemOnGround.DistancePlayer}");
+                }
+
                 if (doorLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= doorLabel.ItemOnGround.DistancePlayer))
                 {
                     var doorTarget = doorLabel.Label?.GetChildFromIndices(0, 2, 1) ?? doorLabel.Label;
@@ -634,6 +684,11 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
                 var chestLabel = _chestLabels?.Value.FirstOrDefault(x =>
                     x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange);
+
+                if (Input.GetKeyState(Settings.ProfilerHotkey.Value))
+                {
+                    DebugWindow.LogMsg($"chest pick candidate: {(chestLabel != null ? chestLabel.ItemOnGround.Metadata : "<none>")}, dist={chestLabel?.ItemOnGround.DistancePlayer}");
+                }
 
                 if (chestLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= chestLabel.ItemOnGround.DistancePlayer))
                 {
