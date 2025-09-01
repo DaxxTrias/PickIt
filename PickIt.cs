@@ -22,6 +22,7 @@ using ExileCore2.PoEMemory;
 using RectangleF = ExileCore2.Shared.RectangleF;
 using Vector2 = System.Numerics.Vector2;
 using Vector3 = System.Numerics.Vector3;
+using System.Collections.Concurrent;
 
 namespace PickIt;
 
@@ -42,7 +43,11 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private bool _pluginBridgeModeOverride;
     private bool[,] InventorySlots => _inventorySlotsCache.Value;
     private readonly Stopwatch _sinceLastClick = Stopwatch.StartNew();
-    private Element UIHoverWithFallback => GameController.IngameState.UIHover switch { null or { Address: 0 } => GameController.IngameState.UIHoverElement, var s => s };
+    private readonly ConcurrentDictionary<string, Regex> _labelRegexCache = new();
+    private Element UIHoverWithFallback =>
+        GameController?.IngameState?.UIHover is { Address: > 0 } s
+            ? s
+            : GameController?.IngameState?.UIHoverElement;
     private bool OkayToClick => _sinceLastClick.ElapsedMilliseconds > Settings.PauseBetweenClicks;
 
     public PickIt()
@@ -125,7 +130,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (Settings.AutoClickHoveredLootInRange.Value)
         {
-            var hoverItemIcon = UIHoverWithFallback.AsObject<HoverItemIcon>();
+            var hoverElement = UIHoverWithFallback;
+            var hoverItemIcon = hoverElement?.AsObject<HoverItemIcon>();
             if (hoverItemIcon != null && GameController?.IngameState?.IngameUi?.InventoryPanel is { IsVisible: false } &&
                 !Input.IsKeyDown(Keys.LButton))
             {
@@ -221,6 +227,12 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         ImGui.SetNextWindowPos(Settings.InventoryPos.Value);
         if (ImGui.Begin($"{Name}##InventoryCellMap", ref opened,nonMoveableFlag))
         {
+            var slots = InventorySlots;
+            if (slots == null || slots.GetLength(0) < 5 || slots.GetLength(1) < 12)
+            {
+                ImGui.End();
+                return;
+            }
             ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
             ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(0,0));
 
@@ -228,8 +240,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             for (var i = 0; i < 5; i++)
             for (var j = 0; j < 12; j++)
             {
-                var toggled = Convert.ToBoolean(InventorySlots[i, j]);
-                if (ImGui.Checkbox($"##{numb}IgnoredCells", ref toggled)) InventorySlots[i, j] = toggled;
+                var toggled = Convert.ToBoolean(slots[i, j]);
+                if (ImGui.Checkbox($"##{numb}IgnoredCells", ref toggled)) slots[i, j] = toggled;
 
                 if (j != 11) ImGui.SameLine();
 
@@ -244,14 +256,29 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool IsItSafeToPickit()
     {
-        if (Settings.NoLootingWhileEnemyClose && GameController.EntityListWrapper.ValidEntitiesByType[EntityType.Monster]
-                    .Any(x => x?.GetComponent<Monster>() != null && x.IsValid && x.IsHostile && x.IsAlive
-                              && !x.IsHidden && !x.Path.Contains("ElementalSummoned")
-                              && x.GetComponent<Render>() != null
-                              && Vector3.Distance(GameController.Player.Pos, x.GetComponent<Render>().Pos) <= Settings.ItemPickitRange))
-            return false;
-        else
+        if (!Settings.NoLootingWhileEnemyClose)
             return true;
+
+        var wrapper = GameController?.EntityListWrapper;
+        var player = GameController?.Player;
+        if (wrapper?.ValidEntitiesByType == null || player == null)
+            return true;
+
+        try
+        {
+            var monsters = wrapper.ValidEntitiesByType[EntityType.Monster];
+            var playerPos = player.Pos;
+            if (monsters.Any(x => x?.GetComponent<Monster>() != null && x.IsValid && x.IsHostile && x.IsAlive
+                                  && !x.IsHidden && x.Path != null && !x.Path.Contains("ElementalSummoned")
+                                  && x.GetComponent<Render>() is { } render
+                                  && Vector3.Distance(playerPos, render.Pos) <= Settings.ItemPickitRange))
+                return false;
+        }
+        catch (Exception)
+        {
+            // Swallow and consider it safe if any transient null/state issue occurs
+        }
+        return true;
     }
 
     private bool DoWePickThis(PickItItemData item)
@@ -275,7 +302,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (!IsItSafeToPickit())
             return [];
 
-        if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
+        if (GameController?.EntityListWrapper?.OnlyValidEntities?.Any(IsFittingEntity) == true)
         {
             return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible
                 .Where(x => x.Address != 0 &&
@@ -302,7 +329,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (!IsItSafeToPickit())
             return [];
 
-        if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
+        if (GameController?.EntityListWrapper?.OnlyValidEntities?.Any(IsFittingEntity) == true)
         {
             return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible
                 .Where(x => x.Address != 0 &&
@@ -325,7 +352,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (!IsItSafeToPickit())
             return [];
 
-        if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
+        if (GameController?.EntityListWrapper?.OnlyValidEntities?.Any(IsFittingEntity) == true)
         {
             return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible
                 .Where(x => x.Address != 0 &&
@@ -355,7 +382,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             return [];
 
 
-        if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
+        if (GameController?.EntityListWrapper?.OnlyValidEntities?.Any(IsFittingEntity) == true)
         {
             return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible
                 .Where(x => x.Address != 0 &&
@@ -377,7 +404,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (!IsItSafeToPickit())
             return [];
 
-        if (GameController.EntityListWrapper.OnlyValidEntities.Any(IsFittingEntity))
+        if (GameController?.EntityListWrapper?.OnlyValidEntities?.Any(IsFittingEntity) == true)
         {
             return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible
                 .Where(x => x.Address != 0 &&
@@ -396,12 +423,21 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (DisableLazyLootingTill > DateTime.Now) return false;
         try
         {
-            if (Settings.NoLazyLootingWhileEnemyClose && GameController.EntityListWrapper.ValidEntitiesByType[EntityType.Monster]
-                    .Any(x => x?.GetComponent<Monster>() != null && x.IsValid && x.IsHostile && x.IsAlive
-                              && !x.IsHidden && !x.Path.Contains("ElementalSummoned")
-                              && x.GetComponent<Render>() != null
-                              && Vector3.Distance(GameController.Player.Pos, x.GetComponent<Render>().Pos) < Settings.ItemPickitRange)) 
-                return false;
+            if (Settings.NoLazyLootingWhileEnemyClose)
+            {
+                var wrapper = GameController?.EntityListWrapper;
+                var player = GameController?.Player;
+                if (wrapper?.ValidEntitiesByType != null && player != null)
+                {
+                    var playerPos = player.Pos;
+                    var monsters = wrapper.ValidEntitiesByType[EntityType.Monster];
+                    if (monsters.Any(x => x?.GetComponent<Monster>() != null && x.IsValid && x.IsHostile && x.IsAlive
+                                          && !x.IsHidden && x.Path != null && !x.Path.Contains("ElementalSummoned")
+                                          && x.GetComponent<Render>() is { } render
+                                          && Vector3.Distance(playerPos, render.Pos) < Settings.ItemPickitRange))
+                        return false;
+                }
+            }
         }
         catch (NullReferenceException)
         {
@@ -417,20 +453,12 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (Settings.LazyLooting && Settings.MiscPickit && Settings.ClickDoors && _doorLabels != null)
         {
-            foreach (var door in _doorLabels.Value)
+            var doorLabel = _doorLabels?.Value?.FirstOrDefault(x =>
+                x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
+                IsLabelClickable(x.Label, null));
+            if (doorLabel != null)
             {
-                if (door == null)
-                    continue;
-                //LogMessage($"Checking door label: {door.Label.Address}, Distance: {door.ItemOnGround.DistancePlayer}");
-                var doorLabel = _doorLabels?.Value.FirstOrDefault(x =>
-                    x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
-                    IsLabelClickable(x.Label, null));
-
-                if (doorLabel != null)
-                {
-                    //LogMessage($"Door label found: {doorLabel.Label.Address}, Distance: {doorLabel.ItemOnGround.DistancePlayer}");
-                    return true;
-                }
+                return true;
             }
         }
 
@@ -448,7 +476,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (!Settings.LazyLooting && !Settings.MiscPickit)
             return false;
 
-        if (label == null)
+        if (label?.ItemOnGround == null)
             return false;
 
         var itemPos = label.ItemOnGround.Pos;
@@ -479,7 +507,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             return null;
         }
 
-        var regex = new Regex(id);
+        var regex = _labelRegexCache.GetOrAdd(id, key => new Regex(key, RegexOptions.Compiled));
         var labelQuery =
             from labelOnGround in labels
             where labelOnGround?.Label is { IsValid: true, Address: > 0, IsVisible: true }
@@ -497,7 +525,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private void LoadRuleFiles()
     {
         var pickitConfigFileDirectory = ConfigDirectory;
-        var existingRules = Settings.PickitRules;
+        var existingRules = Settings.PickitRules ?? new List<PickitRule>();
 
         if (!string.IsNullOrEmpty(Settings.CustomConfigDir))
         {
@@ -547,14 +575,14 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private async SyncTask<bool> RunPickerIterationAsync()
     {
-        LogMessage("RunPickerIterationAsync");
         if (!GameController.Window.IsForeground()) return true;
 
         // If auto-click-on-hover is enabled and we currently have a hovered item icon,
         // let the lightweight tick-path handle the click to avoid fighting over the cursor.
         if (Settings.AutoClickHoveredLootInRange.Value)
         {
-            var hoverItemIcon = UIHoverWithFallback.AsObject<HoverItemIcon>();
+            var hoverElement = UIHoverWithFallback;
+            var hoverItemIcon = hoverElement?.AsObject<HoverItemIcon>();
             if (hoverItemIcon != null && GameController?.IngameState?.IngameUi?.InventoryPanel is { IsVisible: false })
                 return true;
         }
