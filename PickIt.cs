@@ -187,6 +187,11 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             }
         }
 
+        if (Input.GetKeyState(Settings.ProfilerHotkey.Value))
+        {
+            DebugWindow.LogMsg($"Misc counts: doors={_doorLabels?.Value?.Count ?? 0}, chests={_chestLabels?.Value?.Count ?? 0}, portals={_portalLabels?.Value?.Count ?? 0}, shrines={_shrineLabels?.Value?.Count ?? 0}, corpses={_corpseLabels?.Value?.Count ?? 0}");
+        }
+
         if (GetWorkMode() != WorkMode.Stop)
         {
             TaskUtils.RunOrRestart(ref _pickUpTask, RunPickerIterationAsync);
@@ -304,9 +309,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (GameController?.EntityListWrapper?.OnlyValidEntities?.Any(IsFittingEntity) == true)
         {
-            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible
+            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabels
                 .Where(x => x.Address != 0 &&
-                            x.IsVisible &&
                             IsFittingEntity(x.ItemOnGround))
                 .OrderBy(x => x.ItemOnGround.DistancePlayer)
                 .ToList() ?? [];
@@ -331,9 +335,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (GameController?.EntityListWrapper?.OnlyValidEntities?.Any(IsFittingEntity) == true)
         {
-            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible
+            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabels
                 .Where(x => x.Address != 0 &&
-                            x.IsVisible &&
                             IsFittingEntity(x.ItemOnGround))
                 .OrderBy(x => x.ItemOnGround.DistancePlayer)
                 .ToList() ?? [];
@@ -354,9 +357,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (GameController?.EntityListWrapper?.OnlyValidEntities?.Any(IsFittingEntity) == true)
         {
-            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible
+            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabels
                 .Where(x => x.Address != 0 &&
-                            x.IsVisible &&
                             IsFittingEntity(x.ItemOnGround))
                 .OrderBy(x => x.ItemOnGround.DistancePlayer)
                 .ToList() ?? [];
@@ -384,9 +386,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (GameController?.EntityListWrapper?.OnlyValidEntities?.Any(IsFittingEntity) == true)
         {
-            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible
+            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabels
                 .Where(x => x.Address != 0 &&
-                            x.IsVisible &&
                             IsFittingEntity(x.ItemOnGround))
                 .OrderBy(x => x.ItemOnGround.DistancePlayer)
                 .ToList() ?? [];
@@ -406,9 +407,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (GameController?.EntityListWrapper?.OnlyValidEntities?.Any(IsFittingEntity) == true)
         {
-            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible
+            return GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabels
                 .Where(x => x.Address != 0 &&
-                            x.IsVisible &&
                             IsFittingEntity(x.ItemOnGround))
                 .OrderBy(x => x.ItemOnGround.DistancePlayer)
                 .ToList() ?? [];
@@ -617,12 +617,12 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     return false;
 
                 var doorLabel = _doorLabels?.Value.FirstOrDefault(x =>
-                    x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
-                    IsLabelClickable(x.Label, null));
+                    x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange);
 
                 if (doorLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= doorLabel.ItemOnGround.DistancePlayer))
                 {
-                    await PickAsync(doorLabel.ItemOnGround, doorLabel.Label, null, _doorLabels.ForceUpdate);
+                    var doorTarget = doorLabel.Label?.GetChildFromIndices(0, 2, 1) ?? doorLabel.Label;
+                    await PickAsync(doorLabel.ItemOnGround, doorTarget, null, _doorLabels.ForceUpdate);
                     return true;
                 }
             }
@@ -633,12 +633,12 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     return false;
 
                 var chestLabel = _chestLabels?.Value.FirstOrDefault(x =>
-                    x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
-                    IsLabelClickable(x.Label, null));
+                    x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange);
 
                 if (chestLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= chestLabel.ItemOnGround.DistancePlayer))
                 {
-                    await PickAsync(chestLabel.ItemOnGround, chestLabel.Label, null, _chestLabels.ForceUpdate);
+                    var chestTarget = chestLabel.Label?.GetChildFromIndices(0, 2, 1) ?? chestLabel.Label;
+                    await PickAsync(chestLabel.ItemOnGround, chestTarget, null, _chestLabels.ForceUpdate);
                     return true;
                 }
             }
@@ -716,7 +716,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             var tryCount = 0;
             while (tryCount < 3)
             {
-                if (!IsLabelClickable(label, customRect))
+                if (label == null)
                 {
                     onNonClickable();
                     return true;
@@ -732,22 +732,54 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
 
                 var rect = customRect ?? label.GetClientRect();
-                var position = rect.ClickRandom(5, 3) + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
-                if (OkayToClick)
+                Vector2 position;
+                if (rect.Width <= 1 || rect.Height <= 1)
                 {
-                    if (!IsTargeted(item, label))
+                    position = rect.Center + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
+                }
+                else
+                {
+                    var maxMarginX = (int)Math.Floor(rect.Width / 2f) - 1;
+                    var maxMarginY = (int)Math.Floor(rect.Height / 2f) - 1;
+                    var marginX = Math.Max(0, Math.Min(5, maxMarginX));
+                    var marginY = Math.Max(0, Math.Min(3, maxMarginY));
+                    if (marginX == 0 && marginY == 0)
                     {
-                        await SetCursorPositionAsync(position, item, label);
+                        position = rect.Center + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
                     }
                     else
                     {
-                       
-                        if (!IsTargeted(item, label))
+                        position = rect.ClickRandom(marginX, marginY) + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
+                    }
+                }
+
+                if (!IsTargeted(item, label))
+                {
+                    await SetCursorPositionAsync(position, item, label);
+
+                    if (Settings.MiscPickit && Settings.DoorHoverClickFallback && UIHoverWithFallback is { Address: > 0 } hovered && label is { Address: > 0 } && hovered.Address == label.Address)
+                    {
+                        if (OkayToClick)
                         {
-                            await TaskUtils.NextFrame();
-                            continue;
+                            Input.Click(MouseButtons.Left);
+                            _sinceLastClick.Restart();
+                            tryCount++;
                         }
 
+                        await TaskUtils.NextFrame();
+                        continue;
+                    }
+                }
+                else
+                {
+                    if (!IsTargeted(item, label))
+                    {
+                        await TaskUtils.NextFrame();
+                        continue;
+                    }
+
+                    if (OkayToClick)
+                    {
                         Input.Click(MouseButtons.Left);
                         _sinceLastClick.Restart();
                         tryCount++;
