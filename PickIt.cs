@@ -735,8 +735,11 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 					if (t != null)
 					{
 						var dist = t.ItemOnGround.DistancePlayer;
-						// Preserve prior behavior: no strict clickable check; distance gate left flexible
-						candidates.Add(("transition", t.ItemOnGround, t.Label, dist, _transitionLabel.ForceUpdate, true));
+						var target = t.Label?.GetChildFromIndices(0, 2, 1) ?? t.Label;
+						if (IsLabelClickable(target, null))
+						{
+							candidates.Add(("transition", t.ItemOnGround, target, dist, _transitionLabel.ForceUpdate, true));
+						}
 					}
 				}
 			}
@@ -882,6 +885,36 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         }
 
         return label is { HasShinyHighlight: true };
+    }
+
+    private static Element FindClickableDescendant(Element root, int maxDepth = 4)
+    {
+        if (root == null || !root.IsValid) return null;
+        // Breadth-first search through children to find a visible, non-empty rect
+        var queue = new Queue<(Element node, int depth)>();
+        queue.Enqueue((root, 0));
+        while (queue.Count > 0)
+        {
+            var (node, depth) = queue.Dequeue();
+            if (node?.IsValid == true && node.IsVisible)
+            {
+                var rect = node.GetClientRect();
+                if (rect.Width > 1 && rect.Height > 1)
+                {
+                    return node;
+                }
+            }
+
+            if (depth < maxDepth)
+            {
+                foreach (var child in node?.Children ?? Array.Empty<Element>())
+                {
+                    if (child != null)
+                        queue.Enqueue((child, depth + 1));
+                }
+            }
+        }
+        return root; // Fallback to root if nothing suitable found
     }
 
     private static async SyncTask<bool> SetCursorPositionAsync(Vector2 position, Entity item, Element label)
