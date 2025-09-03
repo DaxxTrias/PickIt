@@ -43,6 +43,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private bool[,] InventorySlots => _inventorySlotsCache.Value;
     private readonly Stopwatch _sinceLastClick = Stopwatch.StartNew();
     private readonly ConcurrentDictionary<string, Regex> _labelRegexCache = new();
+    private uint? _lastAreaHash;
     private Element UIHoverWithFallback =>
         GameController?.IngameState?.UIHover is { Address: > 0 } s
             ? s
@@ -151,6 +152,15 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         var playerInvCount = GameController?.Game?.IngameState?.Data?.ServerData?.PlayerInventories?.Count;
         if (playerInvCount is null or 0)
             return;
+
+        // Apply a short cooldown to lazy looting when the area/scene changes
+        var areaHash = GameController?.Area?.CurrentArea?.Hash;
+        if (areaHash != null && areaHash != _lastAreaHash)
+        {
+            _lastAreaHash = areaHash;
+            DisableLazyLootingTill = DateTime.Now.AddMilliseconds(5000); // assume players have left start area after 5s
+            _sinceLastClick.Restart();
+        }
 
         if (Settings.AutoClickHoveredLootInRange.Value)
         {
