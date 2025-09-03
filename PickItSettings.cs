@@ -16,8 +16,8 @@ public class PickItSettings : ISettings
     public ToggleNode Enable { get; set; } = new ToggleNode(false);
     public ToggleNode ShowInventoryView { get; set; } = new ToggleNode(true);
     public RangeNode<Vector2> InventoryPos { get; set; } = new RangeNode<Vector2>(new Vector2(0, 0), Vector2.Zero, new Vector2(4000, 4000));
-    public HotkeyNode ProfilerHotkey { get; set; } = Keys.None;
-    public HotkeyNode PickUpKey { get; set; } = Keys.F;
+    public HotkeyNodeV2 ProfilerHotkey { get; set; } = Keys.None;
+    public HotkeyNodeV2 PickUpKey { get; set; } = Keys.F;
     public ToggleNode PickUpWhenInventoryIsFull { get; set; } = new ToggleNode(false);
     public ToggleNode PickUpEverything { get; set; } = new ToggleNode(false);
     [Menu("Item Pickit Range", "Range at which we will attempt to pickit")]
@@ -34,7 +34,7 @@ public class PickItSettings : ISettings
     [Menu("No Lazy Looting While Enemy Close", "Will disable Lazy Looting while enemies close by")]
     public ToggleNode NoLazyLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
     [ConditionalDisplay(nameof(LazyLooting), true)]
-    public HotkeyNode LazyLootingPauseKey { get; set; } = new HotkeyNode(Keys.Space);
+    public HotkeyNodeV2 LazyLootingPauseKey { get; set; } = new HotkeyNodeV2(Keys.Space);
     [Menu("No Looting While Enemy Close", "Will disable pickit while enemies close by (this includes lazylooting as well as manual pickit)")]
     public ToggleNode NoLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
     [Menu("Miscellaneous Pickit Options", "Pickit will click Doors, Chests, Corpses, Transitions, Portals")]
