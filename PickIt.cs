@@ -785,7 +785,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 					{
 						if (door?.ItemOnGround == null) continue;
 						var dist = door.ItemOnGround.DistancePlayer;
-						if (dist <= Settings.MiscPickitRange)
+						if (dist <= Settings.MiscPickitRange && IsLabelClickable(door.Label, null))
 						{
 							candidates.Add(("door", door.ItemOnGround, door.Label, dist, _doorLabels.ForceUpdate, false));
 						}
@@ -798,10 +798,10 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 					{
 						if (ch?.ItemOnGround == null) continue;
 						var dist = ch.ItemOnGround.DistancePlayer;
-						if (dist <= Settings.MiscPickitRange)
+						if (dist <= Settings.MiscPickitRange && IsLabelClickable(ch.Label, null))
 						{
-																			var target = ch.Label;
-												candidates.Add(("chest", ch.ItemOnGround, target, dist, _chestLabels.ForceUpdate, false));
+							var target = ch.Label;
+							candidates.Add(("chest", ch.ItemOnGround, target, dist, _chestLabels.ForceUpdate, false));
 						}
 					}
 				}
@@ -904,7 +904,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 Vector2 position;
                 if (rect.Width <= 1 || rect.Height <= 1)
                 {
-                    position = rect.Center + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
+                    onNonClickable();
+                    return true;
                 }
                 else
                 {
@@ -933,7 +934,12 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
                 if (!IsTargeted(item, label))
                 {
-                    await SetCursorPositionAsync(position, item, label);
+                    var acquired = await SetCursorPositionAsync(position, item, label);
+                    if (!acquired)
+                    {
+                        tryCount++;
+                        onNonClickable();
+                    }
 
                 }
                 else
