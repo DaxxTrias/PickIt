@@ -29,6 +29,8 @@ public class PickItSettings : ISettings
     public RangeNode<int> ItemDistanceToIgnoreMoving { get; set; } = new RangeNode<int>(20, 0, 1000);
     [Menu("Auto Click Hovered Loot In Range", "Auto pick up any hovered items that matches filters or pickup everything if the 'pickup everything' option is enabled")]
     public ToggleNode AutoClickHoveredLootInRange { get; set; } = new ToggleNode(false);
+    [Menu("Auto Click Hovered Misc In Range", "Auto click hovered doors, chests, transitions, portals, and corpses that are enabled in Misc Pickit")]
+    public ToggleNode AutoClickHoveredMiscInRange { get; set; } = new ToggleNode(false);
     public ToggleNode LazyLooting { get; set; } = new ToggleNode(false);
     [ConditionalDisplay(nameof(LazyLooting), true)]
     [Menu("No Lazy Looting While Enemy Close", "Will disable Lazy Looting while enemies close by")]
@@ -42,6 +44,8 @@ public class PickItSettings : ISettings
     [Menu("Misc Pickit Range", "Range at which we will pickit things that are not items (doors, chests, etc)")]
     [ConditionalDisplay(nameof(MiscPickit), true)]
     public RangeNode<int> MiscPickitRange { get; set; } = new RangeNode<int>(15, 0, 600);
+    [Menu("Misc Click Delay", "How many milliseconds should pickit wait between clicks for a misc object (portal, doors, etc)")]
+    public RangeNode<int> MiscClickDelay { get; set; } = new RangeNode<int>(15000, 100, 100000);
     [ConditionalDisplay(nameof(MiscPickit), true)]
     [Menu("Click Chests", "Will click chests if enabled")]
     public ToggleNode ClickChests { get; set; } = new ToggleNode(true);
@@ -57,8 +61,6 @@ public class PickItSettings : ISettings
     [ConditionalDisplay(nameof(MiscPickit), true)]
     [Menu("Click Portals", "Will click portals if enabled")]
     public ToggleNode ClickPortals { get; set; } = new ToggleNode(false);
-    [Menu("Misc Click Delay", "How many milliseconds should pickit wait between clicks for a misc object (portal, doors, etc)")]
-    public RangeNode<int> MiscClickDelay { get; set; } = new RangeNode<int>(15000, 100, 100000);
 
     [JsonIgnore]
     public TextNode FilterTest { get; set; } = new TextNode();
