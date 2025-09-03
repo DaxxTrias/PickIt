@@ -742,11 +742,14 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 				if (Settings.ClickTransitions)
 				{
 					var t = _transitionLabel?.Value;
-					if (t != null)
-					{
-						var dist = t.ItemOnGround.DistancePlayer;
-						// Preserve prior behavior: no strict clickable check; distance gate left flexible
-						candidates.Add(("transition", t.ItemOnGround, t.Label, dist, _transitionLabel.ForceUpdate, true));
+                    if (t != null)
+                    {
+                        var dist = t.ItemOnGround.DistancePlayer;
+                        var target = t.Label?.GetChildFromIndices(0, 2, 1) ?? t.Label;
+                        if (IsLabelClickable(target, null))
+                        {
+                            candidates.Add(("transition", t.ItemOnGround, target, dist, _transitionLabel.ForceUpdate, true));
+                        }
 					}
 				}
 			}
