@@ -50,9 +50,13 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             : GameController?.IngameState?.UIHoverElement;
     private bool OkayToClick => _sinceLastClick.ElapsedMilliseconds > Settings.PauseBetweenClicks;
 
-    // Debug helpers disabled
-    private bool DebugOn => false;
-    private void Debug(string message) { }
+    // Debug helpers gated by profiler hotkey
+    private bool DebugOn = true;
+    private void Debug(string message)
+    {
+        if (DebugOn)
+            DebugWindow.LogMsg($"[PickItDbg] {message}");
+    }
 
     // DebugScanMiscEnvironment removed
     private void DebugScanMiscEnvironment() { }
@@ -81,6 +85,26 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     {
         var path = entity?.Path;
         return path is { } p && p.Contains("Shrine", StringComparison.Ordinal);
+    }
+
+    private bool TryGetEntityScreenCenter(Entity entity, out Vector2 screen)
+    {
+        screen = default;
+        try
+        {
+            if (entity == null) return false;
+            var render = entity.GetComponent<Render>();
+            var world = render?.Pos ?? entity.Pos;
+            var camera = GameController?.IngameState?.Camera;
+            if (camera == null) return false;
+            var v = camera.WorldToScreen(world);
+            screen = v;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
 
@@ -685,7 +709,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
                 if (corpseLabel != null)
                 {
-                    await PickAsync(corpseLabel.ItemOnGround, corpseLabel.Label?.GetChildFromIndices(0, 2, 1), null, _corpseLabels.ForceUpdate);
+                    await PickAsync(corpseLabel.ItemOnGround, corpseLabel.Label, null, _corpseLabels.ForceUpdate, requireTargeting: false, bypassClickGate: true, yieldAfterMove: true);
                     return true;
                 }
             }
@@ -703,7 +727,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
                 if (DebugOn)
                 {
-                    var target = doorLabel?.Label?.GetChildFromIndices(0, 2, 1) ?? doorLabel?.Label;
+                    var target = doorLabel?.Label;
                     var clickable = target != null && IsLabelClickable(target, null);
                     Debug(doorLabel != null
                         ? $"Door candidate: meta={doorLabel.ItemOnGround.Metadata}, dist={doorLabel.ItemOnGround.DistancePlayer:F1}, clickable={clickable}"
@@ -712,9 +736,9 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
                 if (doorLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= doorLabel.ItemOnGround.DistancePlayer))
                 {
-                    var doorTarget = doorLabel.Label?.GetChildFromIndices(0, 2, 1) ?? doorLabel.Label;
+                    var doorTarget = doorLabel.Label;
                     Debug($"Picking door: meta={doorLabel.ItemOnGround.Metadata}");
-                    await PickAsync(doorLabel.ItemOnGround, doorTarget, null, _doorLabels.ForceUpdate);
+                    await PickAsync(doorLabel.ItemOnGround, doorTarget, null, _doorLabels.ForceUpdate, requireTargeting: false, bypassClickGate: true, yieldAfterMove: true);
                     return true;
                 }
             }
@@ -732,7 +756,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
                 if (DebugOn)
                 {
-                    var target = chestLabel?.Label?.GetChildFromIndices(0, 2, 1) ?? chestLabel?.Label;
+                    var target = chestLabel?.Label;
                     var clickable = target != null && IsLabelClickable(target, null);
                     Debug(chestLabel != null
                         ? $"Chest candidate: meta={chestLabel.ItemOnGround.Metadata}, dist={chestLabel.ItemOnGround.DistancePlayer:F1}, clickable={clickable}"
@@ -741,9 +765,9 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
                 if (chestLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= chestLabel.ItemOnGround.DistancePlayer))
                 {
-                    var chestTarget = chestLabel.Label?.GetChildFromIndices(0, 2, 1) ?? chestLabel.Label;
+                    var chestTarget = chestLabel.Label;
                     Debug($"Picking chest: meta={chestLabel.ItemOnGround.Metadata}");
-                    await PickAsync(chestLabel.ItemOnGround, chestTarget, null, _chestLabels.ForceUpdate);
+                    await PickAsync(chestLabel.ItemOnGround, chestTarget, null, _chestLabels.ForceUpdate, requireTargeting: false, bypassClickGate: true, yieldAfterMove: true);
                     return true;
                 }
             }
@@ -772,7 +796,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                         return false;
                     }
                     Debug("Picking portal");
-                    await PickAsync(portalLabel.ItemOnGround, portalLabel.Label, null, _portalLabels.ForceUpdate);
+                    await PickAsync(portalLabel.ItemOnGround, portalLabel.Label, null, _portalLabels.ForceUpdate, requireTargeting: false, bypassClickGate: true, yieldAfterMove: true);
                     return true;
                 }
             }
@@ -801,7 +825,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                         return false;
                     }
                     Debug("Picking transition");
-                    await PickAsync(transitionLabel.ItemOnGround, transitionLabel.Label, null, _transitionLabel.ForceUpdate);
+                    await PickAsync(transitionLabel.ItemOnGround, transitionLabel.Label, null, _transitionLabel.ForceUpdate, requireTargeting: false, bypassClickGate: true, yieldAfterMove: true);
                     return true;
                 }
             }
@@ -814,7 +838,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
             pickUpThisItem.AttemptedPickups++;
             Debug($"Picking item: name={pickUpThisItem.BaseName}, dist={pickUpThisItem.Distance:F1}");
-            await PickAsync(pickUpThisItem.QueriedItem.Entity, pickUpThisItem.QueriedItem.Label, null, () => { });
+            await PickAsync(pickUpThisItem.QueriedItem.Entity, pickUpThisItem.QueriedItem.Label, null, () => { }, requireTargeting: true, bypassClickGate: false, yieldAfterMove: false);
         }
 
         return true;
@@ -852,7 +876,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                         && (Settings.PickUpWhenInventoryIsFull || CanFitInventory(x))) ?? [];
     }
 
-    private async SyncTask<bool> PickAsync(Entity item, Element label, RectangleF? customRect, Action onNonClickable)
+    private async SyncTask<bool> PickAsync(Entity item, Element label, RectangleF? customRect, Action onNonClickable, bool requireTargeting = true, bool bypassClickGate = false, bool yieldAfterMove = false)
     {
         _isCurrentlyPicking = true;
         try
@@ -879,24 +903,55 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 }
 
                 var rect = customRect ?? label.GetClientRect();
+                Debug($"PickAsync: labelRect=({rect.X:F0},{rect.Y:F0},{rect.Width:F0},{rect.Height:F0}), text='{label.Text}'");
                 Vector2 position;
-                if (rect.Width <= 1 || rect.Height <= 1)
+                var window = GameController.Window.GetWindowRectangleTimeCache;
+                bool rectInScreen = rect.X >= window.X && rect.Y >= window.Y && rect.X + rect.Width <= window.X + window.Width && rect.Y + rect.Height <= window.Y + window.Height;
+                Debug($"PickAsync: rectInScreen={rectInScreen}, window=({window.X:F0},{window.Y:F0},{window.Width:F0},{window.Height:F0})");
+                Vector2 OffsetIfNeeded(Vector2 p) => rectInScreen ? p : p + window.TopLeft;
+
+                bool isDoor = IsDoorEntity(item);
+                bool isChest = IsChestEntity(item);
+                bool isPortal = IsPortalEntity(item);
+                bool isTransition = item?.Path?.Contains("AreaTransition", StringComparison.Ordinal) == true;
+                bool isMisc = isDoor || isChest || isPortal || isTransition;
+                bool usedEntityCenter = false;
+                if (isMisc && TryGetEntityScreenCenter(item, out var entityScreen))
                 {
-                    position = rect.Center + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
+                    // For chests, bias slightly downward from entity center to avoid clicking above the box
+                    if (isChest)
+                    {
+                        entityScreen = new Vector2(entityScreen.X, entityScreen.Y + 12);
+                    }
+                    position = entityScreen;
+                    usedEntityCenter = true;
+                    Debug($"PickAsync: using entity center at <{position.X:F0},{position.Y:F0}>");
                 }
                 else
                 {
-                    var maxMarginX = (int)Math.Floor(rect.Width / 2f) - 1;
-                    var maxMarginY = (int)Math.Floor(rect.Height / 2f) - 1;
-                    var marginX = Math.Max(0, Math.Min(5, maxMarginX));
-                    var marginY = Math.Max(0, Math.Min(3, maxMarginY));
-                    if (marginX == 0 && marginY == 0)
+                    if (rect.Width <= 1 || rect.Height <= 1)
                     {
-                        position = rect.Center + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
+                        position = OffsetIfNeeded(rect.Center);
                     }
                     else
                     {
-                        position = rect.ClickRandom(marginX, marginY) + GameController.Window.GetWindowRectangleTimeCache.TopLeft;
+                        var maxMarginX = (int)Math.Floor(rect.Width / 2f) - 1;
+                        var maxMarginY = (int)Math.Floor(rect.Height / 2f) - 1;
+                        var marginX = Math.Max(0, Math.Min(5, maxMarginX));
+                        var marginY = Math.Max(0, Math.Min(3, maxMarginY));
+                        if (marginX == 0 && marginY == 0)
+                        {
+                            position = OffsetIfNeeded(rect.Center);
+                        }
+                        else
+                        {
+                            position = OffsetIfNeeded(rect.ClickRandom(marginX, marginY));
+                            if (isMisc && !usedEntityCenter)
+                            {
+                                var bottomY = rect.Y + Math.Min(rect.Height - 2, rect.Height * 0.8f);
+                                position = OffsetIfNeeded(new Vector2(rect.Center.X, bottomY));
+                            }
+                        }
                     }
                 }
 
@@ -912,12 +967,79 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     Debug($"PickAsync: clamped click from {position} to <{clampedX}, {clampedY}> within window=({padded.X:F0},{padded.Y:F0},{padded.Width:F0},{padded.Height:F0})");
                 }
                 position = new Vector2(clampedX, clampedY);
+                Debug($"PickAsync: finalClickPos=<{position.X:F0},{position.Y:F0}>");
 
                 if (!IsTargeted(item, label))
                 {
                     Debug($"PickAsync: not targeted, moving cursor to {position}");
-                    await SetCursorPositionAsync(position, item, label);
+                    var targeted = await SetCursorPositionAsync(position, item, label, waitForTargeting: requireTargeting);
+                    if (!requireTargeting || targeted)
+                    {
+                        Debug($"PickAsync: post-move targeted={targeted}, requireTargeting={requireTargeting}, bypassClickGate={bypassClickGate}, okToClick={OkayToClick}");
+                        if (yieldAfterMove)
+                        {
+                            await TaskUtils.NextFrame();
+                            if (isChest)
+                            {
+                                Debug("PickAsync: chest extra settle frame before click");
+                                await TaskUtils.NextFrame();
+                            }
+                        }
+                        if (bypassClickGate || OkayToClick)
+                        {
+                            Debug("PickAsync: clicking after retarget");
+                            Input.Click(MouseButtons.Left);
+                            _sinceLastClick.Restart();
+                            tryCount++;
+                            if (bypassClickGate)
+                            {
+                                await TaskUtils.NextFrame();
+                                var targetedNow = IsTargeted(item, label) || (label?.HasShinyHighlight == true);
+                                Debug($"PickAsync: post-click targeted={targetedNow}");
+                                if (targetedNow && isChest)
+                                {
+                                    // Strongboxes often need a confirm click even when targeted
+                                    Debug("PickAsync: chest confirm second click");
+                                    Input.Click(MouseButtons.Left);
+                                    _sinceLastClick.Restart();
+                                    tryCount++;
+                                }
+                                else if (!targetedNow)
+                                {
+                                    // Fallback: if we used entity center (common for doors/chests), try label bottom-center
+                                    if (isMisc && usedEntityCenter)
+                                    {
+                                        var fallback = rect.Width > 1 && rect.Height > 1
+                                            ? new Vector2(rect.Center.X, rect.Y + Math.Min(rect.Height - 2, rect.Height * 0.8f))
+                                            : rect.Center;
+                                        var fallbackPos = OffsetIfNeeded(fallback);
+                                        // Clamp fallback
+                                        var screenWindowRect2 = GameController.Window.GetWindowRectangleTimeCache;
+                                        var padded2 = screenWindowRect2; padded2.Inflate(-36, -36);
+                                        var fx = Math.Max(padded2.X + 1, Math.Min(padded2.X + padded2.Width - 1, fallbackPos.X));
+                                        var fy = Math.Max(padded2.Y + 1, Math.Min(padded2.Y + padded2.Height - 1, fallbackPos.Y));
+                                        fallbackPos = new Vector2(fx, fy);
+                                        Debug($"PickAsync: post-click fallback move to <{fallbackPos.X:F0},{fallbackPos.Y:F0}>");
+                                        Input.SetCursorPos(fallbackPos);
+                                        await TaskUtils.NextFrame();
+                                    }
 
+                                    Debug("PickAsync: retrying click on single-press path");
+                                    Input.Click(MouseButtons.Left);
+                                    _sinceLastClick.Restart();
+                                    tryCount++;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Debug("PickAsync: skipped click after retarget (gate)");
+                        }
+                    }
+                    else
+                    {
+                        Debug("PickAsync: post-move still not targeted and targeting required");
+                    }
                 }
                 else
                 {
@@ -963,11 +1085,20 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         return label is { HasShinyHighlight: true };
     }
 
-    private async SyncTask<bool> SetCursorPositionAsync(Vector2 position, Entity item, Element label)
+    private async SyncTask<bool> SetCursorPositionAsync(Vector2 position, Entity item, Element label, bool waitForTargeting = true)
     {
         Debug($"SetCursorPos: {position}");
         Input.SetCursorPos(position);
-        return await TaskUtils.CheckEveryFrame(() => IsTargeted(item, label), new CancellationTokenSource(150).Token);
+        if (!waitForTargeting)
+        {
+            Debug("SetCursorPos: skipping wait for targeting");
+            return false;
+        }
+        // Give the UI a very short time slice to update hover/targeting
+        await TaskUtils.NextFrame();
+        var targeted = await TaskUtils.CheckEveryFrame(() => IsTargeted(item, label), new CancellationTokenSource(150).Token);
+        Debug($"SetCursorPos: targeted={targeted}, labelHasShiny={label?.HasShinyHighlight}");
+        return targeted;
     }
 
     #endregion
