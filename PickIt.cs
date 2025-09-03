@@ -193,6 +193,68 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             }
         }
 
+        // New: hovered misc auto-click (doors/chests/portals/transitions/corpses) respecting misc toggles
+        if (Settings.AutoClickHoveredMiscInRange.Value && Settings.MiscPickit)
+        {
+            var hoverElement = UIHoverWithFallback;
+            if (hoverElement != null && GameController?.IngameState?.IngameUi?.InventoryPanel is { IsVisible: false } &&
+                !Input.IsKeyDown(Keys.LButton) && IsItSafeToPickit())
+            {
+                var hoveredAddr = hoverElement.Address;
+                (LabelOnGround Label, float Dist, bool RequiresDelay)? candidate = null;
+
+                void Consider(System.Collections.Generic.IEnumerable<LabelOnGround> labels, bool enabled, bool requiresDelay)
+                {
+                    if (!enabled || labels == null) return;
+                    foreach (var l in labels)
+                    {
+                        if (l?.Label == null || l.ItemOnGround == null) continue;
+                        if (l.Label.Address != hoveredAddr) continue;
+                        var dist = l.ItemOnGround.DistancePlayer;
+                        if (dist > Settings.MiscPickitRange) continue;
+                        if (!IsLabelClickable(l.Label, null)) continue;
+                        candidate = (l, dist, requiresDelay);
+                        return;
+                    }
+                }
+
+                Consider(_doorLabels?.Value, Settings.ClickDoors, false);
+                Consider(_chestLabels?.Value, Settings.ClickChests, false);
+                Consider(_corpseLabels?.Value, Settings.ClickCorpses, false);
+                Consider(_portalLabels?.Value, Settings.ClickPortals, true);
+
+                				if (Settings.ClickTransitions && _transitionLabel?.Value is { } t && t.Label != null && t.ItemOnGround != null)
+				{
+					var target = t.Label;
+					if (t.Label.Address == hoveredAddr && IsLabelClickable(target, null))
+                    {
+                        var dist = t.ItemOnGround.DistancePlayer;
+                        if (dist <= Settings.MiscPickitRange)
+                        {
+                            candidate = (t, dist, true);
+                        }
+                    }
+                }
+
+                if (candidate is { } c)
+                {
+                    if (c.RequiresDelay)
+                    {
+                        if (_sinceLastClick.ElapsedMilliseconds >= Settings.MiscClickDelay)
+                        {
+                            _sinceLastClick.Restart();
+                            Input.Click(MouseButtons.Left);
+                        }
+                    }
+                    else if (OkayToClick)
+                    {
+                        _sinceLastClick.Restart();
+                        Input.Click(MouseButtons.Left);
+                    }
+                }
+            }
+        }
+
         var inventories = GameController?.Game?.IngameState?.Data?.ServerData?.PlayerInventories;
         _inventoryItems = inventories != null && inventories.Count > 0 && inventories[0] != null
             ? inventories[0].Inventory
@@ -666,6 +728,24 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 return true;
         }
 
+        // Also defer to hovered-misc when enabled and a misc label is hovered
+        if (Settings.AutoClickHoveredMiscInRange.Value && Settings.MiscPickit)
+        {
+            var hoverElement = UIHoverWithFallback;
+            if (hoverElement != null && GameController?.IngameState?.IngameUi?.InventoryPanel is { IsVisible: false })
+            {
+                var hoveredAddr = hoverElement.Address;
+                bool IsHoveredMisc(LabelOnGround l) => l?.Label != null && l.Label.Address == hoveredAddr;
+                if ((_doorLabels?.Value?.Any(IsHoveredMisc) ?? false) ||
+                    (_chestLabels?.Value?.Any(IsHoveredMisc) ?? false) ||
+                    (_corpseLabels?.Value?.Any(IsHoveredMisc) ?? false) ||
+                    (_portalLabels?.Value?.Any(IsHoveredMisc) ?? false) ||
+                    (_transitionLabel?.Value?.Label?.Address == hoveredAddr))
+                {
+                    return true;
+                }
+            }
+        }
 
 
         // Hover/highlight fallbacks removed; rely solely on LabelOnGround.Entity data
@@ -693,8 +773,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 									var dist = c.ItemOnGround.DistancePlayer;
 									if (dist <= Settings.MiscPickitRange && IsLabelClickable(c.Label, null))
 									{
-										var target = c.Label?.GetChildFromIndices(0, 2, 1) ?? c.Label;
-										candidates.Add(("corpse", c.ItemOnGround, target, dist, _corpseLabels.ForceUpdate, false));
+																						var target = c.Label;
+												candidates.Add(("corpse", c.ItemOnGround, target, dist, _corpseLabels.ForceUpdate, false));
 									}
 								}
 							}
@@ -720,8 +800,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 						var dist = ch.ItemOnGround.DistancePlayer;
 						if (dist <= Settings.MiscPickitRange)
 						{
-							var target = ch.Label?.GetChildFromIndices(0, 2, 1) ?? ch.Label;
-							candidates.Add(("chest", ch.ItemOnGround, target, dist, _chestLabels.ForceUpdate, false));
+																			var target = ch.Label;
+												candidates.Add(("chest", ch.ItemOnGround, target, dist, _chestLabels.ForceUpdate, false));
 						}
 					}
 				}
@@ -745,8 +825,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     if (t != null)
                     {
                         var dist = t.ItemOnGround.DistancePlayer;
-                        var target = t.Label?.GetChildFromIndices(0, 2, 1) ?? t.Label;
-                        if (IsLabelClickable(target, null))
+                        				var target = t.Label;
+						if (IsLabelClickable(target, null))
                         {
                             candidates.Add(("transition", t.ItemOnGround, target, dist, _transitionLabel.ForceUpdate, true));
                         }
