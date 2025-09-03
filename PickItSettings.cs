@@ -14,54 +14,66 @@ namespace PickIt;
 public class PickItSettings : ISettings
 {
     public ToggleNode Enable { get; set; } = new ToggleNode(false);
+    [Menu("Show Inventory Overlay", "Display a 5x12 inventory grid overlay to toggle ignored cells.")]
     public ToggleNode ShowInventoryView { get; set; } = new ToggleNode(true);
+    [Menu("Inventory Overlay Position", "Screen position for the inventory overlay (drag to move).")]
     public RangeNode<Vector2> InventoryPos { get; set; } = new RangeNode<Vector2>(new Vector2(0, 0), Vector2.Zero, new Vector2(4000, 4000));
+    [Menu("Profiler/Debug Hotkey", "Hold to print diagnostic info (e.g., hover checks) to the log.")]
     public HotkeyNodeV2 ProfilerHotkey { get; set; } = Keys.None;
+    [Menu("Manual Pick Hotkey", "Hold to force manual pickup mode while pressed.")]
     public HotkeyNodeV2 PickUpKey { get; set; } = Keys.F;
+    [Menu("Pick Up When Inventory Is Full", "Attempt picking even if no inventory space is available.")]
     public ToggleNode PickUpWhenInventoryIsFull { get; set; } = new ToggleNode(false);
+    [Menu("Pick Up Everything", "Ignore filters and pick up all items within range.")]
     public ToggleNode PickUpEverything { get; set; } = new ToggleNode(false);
-    [Menu("Item Pickit Range", "Range at which we will attempt to pickit")]
-    public RangeNode<int> ItemPickitRange { get; set; } = new RangeNode<int>(600, 1, 1000);
-    [Menu("Enemy Proximity Range", "Radius for enemy proximity checks (no looting)")]
+    [Menu("No Looting Near Enemies", "Pause all looting (manual, hover, lazy) while enemies are within the proximity range.")]
+    public ToggleNode NoLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
+    [ConditionalDisplay(nameof(NoLootingWhileEnemyClose), true)]
+    [Menu("Enemy Proximity Range", "Radius (units) used for enemy proximity checks to pause looting. Also applies to lazy looting when its enemy toggle is enabled.")]
     public RangeNode<int> EnemyProximityRange { get; set; } = new RangeNode<int>(600, 1, 1000);
-    [Menu("Pause Between Clicks", "How many milliseconds to wait between clicks")]
+    [Menu("Item Pickit Range", "Maximum distance (units) to consider items for pickup.")]
+    public RangeNode<int> ItemPickitRange { get; set; } = new RangeNode<int>(600, 1, 1000);
+    [Menu("Pause Between Clicks", "Delay in milliseconds between clicks for non-misc actions.")]
     public RangeNode<int> PauseBetweenClicks { get; set; } = new RangeNode<int>(100, 0, 500);
+    [Menu("Ignore While Moving", "When on, avoid clicking while the player is moving beyond the set distance.")]
     public ToggleNode IgnoreMoving { get; set; } = new ToggleNode(false);
     [ConditionalDisplay(nameof(IgnoreMoving), true)]
+    [Menu("Ignore-Moving Distance", "Minimum distance (units) before clicks occur while moving.")]
     public RangeNode<int> ItemDistanceToIgnoreMoving { get; set; } = new RangeNode<int>(20, 0, 1000);
-    [Menu("Auto Click Hovered Loot In Range", "Auto pick up any hovered items that matches filters or pickup everything if the 'pickup everything' option is enabled")]
+    [Menu("Auto-Click Hovered Loot", "Auto-click hovered items that match filters or when 'Pick Up Everything' is on.")]
     public ToggleNode AutoClickHoveredLootInRange { get; set; } = new ToggleNode(false);
-    [Menu("Auto Click Hovered Misc In Range", "Auto click hovered doors, chests, transitions, portals, and corpses that are enabled in Misc Pickit")]
+    [Menu("Auto-Click Hovered Misc", "Auto-click hovered doors, chests, transitions, portals, and corpses when enabled.")]
     public ToggleNode AutoClickHoveredMiscInRange { get; set; } = new ToggleNode(false);
+    [Menu("Lazy Looting", "Automatically pick nearby targets when it is safe.")]
     public ToggleNode LazyLooting { get; set; } = new ToggleNode(false);
     [ConditionalDisplay(nameof(LazyLooting), true)]
-    [Menu("No Lazy Looting While Enemy Close", "Will disable Lazy Looting while enemies close by")]
+    [Menu("No Lazy Looting Near Enemies", "Pause lazy looting while enemies are within the proximity range.")]
     public ToggleNode NoLazyLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
     [ConditionalDisplay(nameof(LazyLooting), true)]
+    [Menu("Lazy Looting Pause Hotkey", "Hold to temporarily pause lazy looting.")]
     public HotkeyNodeV2 LazyLootingPauseKey { get; set; } = new HotkeyNodeV2(Keys.Space);
-    [Menu("No Looting While Enemy Close", "Will disable pickit while enemies close by (this includes lazylooting as well as manual pickit)")]
-    public ToggleNode NoLootingWhileEnemyClose { get; set; } = new ToggleNode(false);
-    [Menu("Miscellaneous Pickit Options", "Pickit will click Doors, Chests, Corpses, Transitions, Portals")]
+    
+    [Menu("Miscellaneous Pickit Options", "Enable clicking of doors, chests, corpses, transitions, and portals.")]
     public ToggleNode MiscPickit { get; set; } = new ToggleNode(true);
-    [Menu("Misc Pickit Range", "Range at which we will pickit things that are not items (doors, chests, etc)")]
+    [Menu("Misc Pickit Range", "Maximum distance (units) for misc interactions (doors, chests, etc.).")]
     [ConditionalDisplay(nameof(MiscPickit), true)]
-    public RangeNode<int> MiscPickitRange { get; set; } = new RangeNode<int>(15, 0, 600);
-    [Menu("Misc Click Delay", "How many milliseconds should pickit wait between clicks for a misc object (portal, doors, etc)")]
-    public RangeNode<int> MiscClickDelay { get; set; } = new RangeNode<int>(15000, 100, 100000);
+    public RangeNode<int> MiscPickitRange { get; set; } = new RangeNode<int>(25, 0, 600);
+    [Menu("Misc Click Delay", "Delay in milliseconds between clicks for misc actions that require pacing (e.g., portals).")]
+    public RangeNode<int> MiscClickDelay { get; set; } = new RangeNode<int>(10000, 100, 100000);
     [ConditionalDisplay(nameof(MiscPickit), true)]
-    [Menu("Click Chests", "Will click chests if enabled")]
+    [Menu("Click Chests", "Click chests when in range.")]
     public ToggleNode ClickChests { get; set; } = new ToggleNode(true);
     [ConditionalDisplay(nameof(MiscPickit), true)]
-    [Menu("Click Doors", "Will click doors if enabled")]
+    [Menu("Click Doors", "Click doors and levers when in range.")]
     public ToggleNode ClickDoors { get; set; } = new ToggleNode(true);
-    [Menu("Click Transitions", "Will click area/zone transitions if enabled")]
+    [Menu("Click Transitions", "Click area/zone transitions when in range.")]
     [ConditionalDisplay(nameof(MiscPickit), true)]
     public ToggleNode ClickTransitions { get; set; } = new ToggleNode(false);
     [ConditionalDisplay(nameof(MiscPickit), true)]
-    [Menu("Click Corpses", "Will click corpses if enabled")]
+    [Menu("Click Corpses", "Click interactable corpses when in range (league-specific mechanics).")]
     public ToggleNode ClickCorpses { get; set; } = new ToggleNode(true);
     [ConditionalDisplay(nameof(MiscPickit), true)]
-    [Menu("Click Portals", "Will click portals if enabled")]
+    [Menu("Click Portals", "Click portals when in range. Uses separate misc click delay pacing.")]
     public ToggleNode ClickPortals { get; set; } = new ToggleNode(false);
 
     [JsonIgnore]
@@ -70,7 +82,7 @@ public class PickItSettings : ISettings
     [JsonIgnore]
     public ButtonNode ReloadFilters { get; set; } = new ButtonNode();
 
-    [Menu("Use a Custom \"\\config\\custom_folder\" folder ")]
+    [Menu("Custom Config Folder", "Optional subfolder under 'config' to load .ifl rule files from.")]
     public TextNode CustomConfigDir { get; set; } = new TextNode();
 
     public List<PickitRule> PickitRules = new List<PickitRule>();
@@ -78,7 +90,7 @@ public class PickItSettings : ISettings
     [JsonIgnore]
     public FilterNode Filters { get; } = new FilterNode();
 
-    [Menu(null, "For debugging. Highlights items if they match an existing filter")]
+    [Menu("Debug Highlight", "For debugging. Highlights items/misc when they match active settings/filters.")]
     [JsonIgnore]
     public ToggleNode DebugHighlight { get; set; } = new ToggleNode(false);
 }
