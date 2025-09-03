@@ -381,7 +381,12 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     {
         static bool IsFittingEntity(Entity entity)
         {
-            return entity?.Path is "Metadata/Terrain/Leagues/Necropolis/Objects/NecropolisCorpseMarker";
+            if (entity?.Path is not { } path)
+                return false;
+
+            return path == "Metadata/Terrain/Leagues/Necropolis/Objects/NecropolisCorpseMarker"
+                || path.Contains("Landmark_Chest", StringComparison.Ordinal)
+                || path.Contains("Chest", StringComparison.Ordinal);
         }
 
         if (!IsItSafeToPickit())
@@ -670,19 +675,19 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
 			if (Settings.MiscPickit && !inTownOrHideout)
 			{
-				if (Settings.ClickCorpses)
-				{
-					foreach (var c in _corpseLabels?.Value ?? Enumerable.Empty<LabelOnGround>())
-					{
-						if (c?.ItemOnGround == null) continue;
-						var dist = c.ItemOnGround.DistancePlayer;
-						if (dist <= Settings.MiscPickitRange && IsLabelClickable(c.Label, null))
-						{
-							var target = c.Label?.GetChildFromIndices(0, 2, 1);
-							candidates.Add(("corpse", c.ItemOnGround, target, dist, _corpseLabels.ForceUpdate, false));
-						}
-					}
-				}
+											if (Settings.ClickCorpses)
+							{
+								foreach (var c in _corpseLabels?.Value ?? Enumerable.Empty<LabelOnGround>())
+								{
+									if (c?.ItemOnGround == null) continue;
+									var dist = c.ItemOnGround.DistancePlayer;
+									if (dist <= Settings.MiscPickitRange && IsLabelClickable(c.Label, null))
+									{
+										var target = c.Label?.GetChildFromIndices(0, 2, 1) ?? c.Label;
+										candidates.Add(("corpse", c.ItemOnGround, target, dist, _corpseLabels.ForceUpdate, false));
+									}
+								}
+							}
 
 				if (Settings.ClickDoors)
 				{
