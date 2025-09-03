@@ -53,9 +53,9 @@ SocketInfo.LargestLinkSize == 6
 // Maps + Map Fragments
 //----------------------------------------------
 
-isMap && MapTier >= 1
+MapInfo.IsMap && MapInfo.Tier >= 1
 
-isMap && Rarity == ItemRarity.Unique
+MapInfo.IsMap && Rarity == ItemRarity.Unique
 
 ClassName == "MapFragment"
 
@@ -67,7 +67,7 @@ BaseName.Contains("Maven's Invitation") // Invitations
 
 ClassName.Contains("Flask") && ItemQuality >= 20 // quality flask over 20
 
-//ClassName.Contains("Flask") && ItemQuality == 0 // non quality flask
+ClassName.Contains("Flask") && ItemQuality == 0 // non quality flask
 
 //----------------------------------------------
 // Incubatores
@@ -87,4 +87,4 @@ BaseName == "Foreboding Incubator"
 
 BaseName == "Blighted Incubator"
 
-//BaseName.EndsWith(" Incubator") // All Incubators
+BaseName.EndsWith(" Incubator") // All Incubators

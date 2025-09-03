@@ -12,9 +12,35 @@ BaseName.EndsWith(" Incubator")
 
 BaseName.Contains("Maven's")
 
-IsMap && MapTier >= 1
+MapInfo.IsMap && Rarity == ItemRarity.Unique
 
-IsBlightMap
+MapInfo.OccupiedBy.ElderBoss && MapInfo.Tier >= 1
+
+MapInfo.OccupiedBy.Enslaver && MapInfo.Tier >= 1
+
+MapInfo.OccupiedBy.Constrictor && MapInfo.Tier >= 1
+
+MapInfo.OccupiedBy.Eradicator && MapInfo.Tier >= 1
+
+MapInfo.OccupiedBy.Purifier && MapInfo.Tier >= 1
+
+MapInfo.OccupiedBy.ConquerorBoss && MapInfo.Tier >= 1
+
+MapInfo.OccupiedBy.Baran && MapInfo.Tier >= 1
+
+MapInfo.OccupiedBy.Veritania && MapInfo.Tier >= 1
+
+MapInfo.OccupiedBy.AlHezmin && MapInfo.Tier >= 1
+
+MapInfo.OccupiedBy.Drox && MapInfo.Tier >= 1
+
+MapInfo.Type.Uber && MapInfo.Tier >= 1
+
+MapInfo.Type.Blighted && MapInfo.Tier >= 1
+
+MapInfo.Type.BlightRavaged && MapInfo.Tier >= 1
+
+MapInfo.IsMap && MapInfo.Tier >= 1
 
 SocketInfo.LargestLinkSize == 6
 

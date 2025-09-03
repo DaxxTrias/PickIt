@@ -76,14 +76,6 @@ public partial class PickIt
         var itemStackComp = item.Entity.GetComponent<Stack>();
         var inventoryItemStackComp = inventoryItem.Item.GetComponent<Stack>();
 
-        /*
-         * Reserved if the itemlevel is ever found as incubators dont have a mods comp?? why.
-        if (item.BaseName.EndsWith(" Incubator") && inventoryItem.Item.HasComponent<Mods>())
-        {
-            return (item.ItemLevel == inventoryItem.Item.GetComponent<Mods>().ItemLevel) && inventoryItemStackComp.Size + itemStackComp.Size <= inventoryItemStackComp.Info.MaxStackSize;
-        }
-        */
-
         return inventoryItemStackComp.Size + itemStackComp.Size <= inventoryItemStackComp.Info.MaxStackSize;
     }
 
