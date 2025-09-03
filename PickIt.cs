@@ -73,7 +73,12 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     {
         if (entity == null) return false;
         var path = entity.Path;
-        if (path is { } p && p.StartsWith("Metadata/MiscellaneousObjects/Portal", StringComparison.Ordinal)) return true;
+        if (path is { } p)
+        {
+            if (p.StartsWith("Metadata/MiscellaneousObjects/Portal", StringComparison.Ordinal)) return true;
+            if (p.StartsWith("Metadata/MiscellaneousObjects/MultiplexPortal", StringComparison.Ordinal)) return true;
+            if (p.StartsWith("Metadata/Effects/Microtransactions/Town_Portals/", StringComparison.Ordinal)) return true;
+        }
         return entity.HasComponent<Portal>();
     }
 
@@ -413,8 +418,12 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             if (entity == null)
                 return false;
 
-            if (entity.Path is { } path && path.StartsWith("Metadata/MiscellaneousObjects/Portal", StringComparison.Ordinal))
-                return true;
+            if (entity.Path is { } path)
+            {
+                if (path.StartsWith("Metadata/MiscellaneousObjects/Portal", StringComparison.Ordinal)) return true;
+                if (path.StartsWith("Metadata/MiscellaneousObjects/MultiplexPortal", StringComparison.Ordinal)) return true;
+                if (path.StartsWith("Metadata/Effects/Microtransactions/Town_Portals/", StringComparison.Ordinal)) return true;
+            }
 
             return entity.HasComponent<Portal>();
         }
