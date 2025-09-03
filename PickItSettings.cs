@@ -22,6 +22,8 @@ public class PickItSettings : ISettings
     public ToggleNode PickUpEverything { get; set; } = new ToggleNode(false);
     [Menu("Item Pickit Range", "Range at which we will attempt to pickit")]
     public RangeNode<int> ItemPickitRange { get; set; } = new RangeNode<int>(600, 1, 1000);
+    [Menu("Enemy Proximity Range", "Radius for enemy proximity checks (no looting)")]
+    public RangeNode<int> EnemyProximityRange { get; set; } = new RangeNode<int>(600, 1, 1000);
     [Menu("Pause Between Clicks", "How many milliseconds to wait between clicks")]
     public RangeNode<int> PauseBetweenClicks { get; set; } = new RangeNode<int>(100, 0, 500);
     public ToggleNode IgnoreMoving { get; set; } = new ToggleNode(false);
@@ -127,7 +129,35 @@ public class FilterNode
             ImGui.PopID();
         }
 
-        pickit.Settings.PickitRules = tempNpcInvRules;
+        // Detect changes (order or Enabled flags) and auto-reload filters
+        bool changed = false;
+        if (tempNpcInvRules.Count != pickit.Settings.PickitRules.Count)
+        {
+            changed = true;
+        }
+        else
+        {
+            for (int i = 0; i < tempNpcInvRules.Count; i++)
+            {
+                var a = tempNpcInvRules[i];
+                var b = pickit.Settings.PickitRules[i];
+                if (!string.Equals(a.Name, b.Name) || !string.Equals(a.Location, b.Location) || a.Enabled != b.Enabled)
+                {
+                    changed = true;
+                    break;
+                }
+            }
+        }
+
+        if (changed)
+        {
+            pickit.Settings.PickitRules = tempNpcInvRules;
+            pickit.LoadRuleFiles();
+        }
+        else
+        {
+            pickit.Settings.PickitRules = tempNpcInvRules;
+        }
     }
 }
 
