@@ -48,9 +48,6 @@ public class PickItSettings : ISettings
     [ConditionalDisplay(nameof(MiscPickit), true)]
     [Menu("Click Doors", "Will click doors if enabled")]
     public ToggleNode ClickDoors { get; set; } = new ToggleNode(true);
-    [Menu("Door Hover Click Fallback", "If hovering matches the door label, click even if not targeted/shiny")] 
-    [ConditionalDisplay(nameof(MiscPickit), true)]
-    public ToggleNode DoorHoverClickFallback { get; set; } = new ToggleNode(true);
     [Menu("Click Transitions", "Will click area/zone transitions if enabled")]
     [ConditionalDisplay(nameof(MiscPickit), true)]
     public ToggleNode ClickTransitions { get; set; } = new ToggleNode(false);

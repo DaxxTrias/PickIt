@@ -51,7 +51,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private bool OkayToClick => _sinceLastClick.ElapsedMilliseconds > Settings.PauseBetweenClicks;
 
     // Debug helpers disabled
-    private bool DebugOn => false;
     private void Debug(string message) { }
 
     // DebugScanMiscEnvironment removed
@@ -563,10 +562,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             var winRight = gameWindowRect.X + gameWindowRect.Width;
             var winBottom = gameWindowRect.Y + gameWindowRect.Height;
             var intersects = rect.X < winRight && rectRight > gameWindowRect.X && rect.Y < winBottom && rectBottom > gameWindowRect.Y;
-            if (DebugOn)
-            {
-                Debug($"IsLabelClickable={intersects}: center={center}, rect=({rect.X:F0},{rect.Y:F0},{rect.Width:F0},{rect.Height:F0}), gameRect=({gameWindowRect.X:F0},{gameWindowRect.Y:F0},{gameWindowRect.Width:F0},{gameWindowRect.Height:F0}), containsCenter={containsCenter}");
-            }
             return intersects;
         }
 
@@ -671,160 +666,110 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         var workMode = GetWorkMode();
         Debug($"RunPickerIteration: mode={workMode}, item={(pickUpThisItem?.BaseName ?? "<none>")}, dist={(pickUpThisItem?.Distance is {} d ? d.ToString("F1") : "-")}");
         if (workMode == WorkMode.Manual || workMode == WorkMode.Lazy && (ShouldLazyLoot(pickUpThisItem) ||
-            ShouldLazyLootMisc(_portalLabels.Value.FirstOrDefault()) ||
-            ShouldLazyLootMisc(_transitionLabel.Value) ||
-            ShouldLazyLootMisc(_shrineLabels.Value.FirstOrDefault()) ||
-            ShouldLazyLootMisc(_chestLabels.Value.FirstOrDefault())))
-        {
-            if (Settings.ClickCorpses && Settings.MiscPickit)
-            {
-                if (GameController.Area?.CurrentArea is { IsHideout: true } or { IsTown: true })
-                {
-                    Debug("Skip corpses: in town/hideout");
-                    return false;
-                }
+			ShouldLazyLootMisc(_portalLabels.Value.FirstOrDefault()) ||
+			ShouldLazyLootMisc(_transitionLabel.Value) ||
+			ShouldLazyLootMisc(_shrineLabels.Value.FirstOrDefault()) ||
+			ShouldLazyLootMisc(_chestLabels.Value.FirstOrDefault())))
+		{
+			var inTownOrHideout = GameController.Area?.CurrentArea is { IsHideout: true } or { IsTown: true };
 
-                var corpseLabel = _corpseLabels?.Value.FirstOrDefault(x =>
-                    x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
-                    IsLabelClickable(x.Label, null));
+			// Merge misc candidates across types and choose the globally nearest
+			var candidates = new List<(string Kind, Entity Entity, Element Target, float Distance, Action ForceUpdate, bool RequiresDelay)>();
 
-                Debug(corpseLabel != null
-                    ? $"Corpse candidate: meta={corpseLabel.ItemOnGround.Metadata}, dist={corpseLabel.ItemOnGround.DistancePlayer:F1}"
-                    : "No corpse candidate");
+			if (Settings.MiscPickit && !inTownOrHideout)
+			{
+				if (Settings.ClickCorpses)
+				{
+					foreach (var c in _corpseLabels?.Value ?? Enumerable.Empty<LabelOnGround>())
+					{
+						if (c?.ItemOnGround == null) continue;
+						var dist = c.ItemOnGround.DistancePlayer;
+						if (dist <= Settings.MiscPickitRange && IsLabelClickable(c.Label, null))
+						{
+							var target = c.Label?.GetChildFromIndices(0, 2, 1);
+							candidates.Add(("corpse", c.ItemOnGround, target, dist, _corpseLabels.ForceUpdate, false));
+						}
+					}
+				}
 
-                if (corpseLabel != null)
-                {
-                    await PickAsync(corpseLabel.ItemOnGround, corpseLabel.Label?.GetChildFromIndices(0, 2, 1), null, _corpseLabels.ForceUpdate);
-                    return true;
-                }
-            }
+				if (Settings.ClickDoors)
+				{
+					foreach (var door in _doorLabels?.Value ?? Enumerable.Empty<LabelOnGround>())
+					{
+						if (door?.ItemOnGround == null) continue;
+						var dist = door.ItemOnGround.DistancePlayer;
+						if (dist <= Settings.MiscPickitRange)
+						{
+							candidates.Add(("door", door.ItemOnGround, door.Label, dist, _doorLabels.ForceUpdate, false));
+						}
+					}
+				}
 
-            if (Settings.ClickDoors && Settings.MiscPickit)
-            {
-                if (GameController.Area?.CurrentArea is { IsHideout: true } or { IsTown: true })
-                {
-                    Debug("Skip doors: in town/hideout");
-                    return false;
-                }
+				if (Settings.ClickChests)
+				{
+					foreach (var ch in _chestLabels?.Value ?? Enumerable.Empty<LabelOnGround>())
+					{
+						if (ch?.ItemOnGround == null) continue;
+						var dist = ch.ItemOnGround.DistancePlayer;
+						if (dist <= Settings.MiscPickitRange)
+						{
+							var target = ch.Label?.GetChildFromIndices(0, 2, 1) ?? ch.Label;
+							candidates.Add(("chest", ch.ItemOnGround, target, dist, _chestLabels.ForceUpdate, false));
+						}
+					}
+				}
 
-                var doorLabel = _doorLabels?.Value.FirstOrDefault(x =>
-                    x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange);
+				if (Settings.ClickPortals)
+				{
+					foreach (var p in _portalLabels?.Value ?? Enumerable.Empty<LabelOnGround>())
+					{
+						if (p?.ItemOnGround == null) continue;
+						var dist = p.ItemOnGround.DistancePlayer;
+						if (dist <= Settings.MiscPickitRange && IsLabelClickable(p.Label, null))
+						{
+							candidates.Add(("portal", p.ItemOnGround, p.Label, dist, _portalLabels.ForceUpdate, true));
+						}
+					}
+				}
 
-                if (DebugOn)
-                {
-                    var target = doorLabel?.Label?.GetChildFromIndices(0, 2, 1) ?? doorLabel?.Label;
-                    var clickable = target != null && IsLabelClickable(target, null);
-                    Debug(doorLabel != null
-                        ? $"Door candidate: meta={doorLabel.ItemOnGround.Metadata}, dist={doorLabel.ItemOnGround.DistancePlayer:F1}, clickable={clickable}"
-                        : "No door candidate");
-                }
+				if (Settings.ClickTransitions)
+				{
+					var t = _transitionLabel?.Value;
+					if (t != null)
+					{
+						var dist = t.ItemOnGround.DistancePlayer;
+						// Preserve prior behavior: no strict clickable check; distance gate left flexible
+						candidates.Add(("transition", t.ItemOnGround, t.Label, dist, _transitionLabel.ForceUpdate, true));
+					}
+				}
+			}
 
-                if (doorLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= doorLabel.ItemOnGround.DistancePlayer))
-                {
-                    var doorTarget = doorLabel.Label?.GetChildFromIndices(0, 2, 1) ?? doorLabel.Label;
-                    Debug($"Picking door: meta={doorLabel.ItemOnGround.Metadata}");
-                    await PickAsync(doorLabel.ItemOnGround, doorTarget, null, _doorLabels.ForceUpdate);
-                    return true;
-                }
-            }
+			if (candidates.Count > 0)
+			{
+				var nearest = candidates.OrderBy(c => c.Distance).First();
+				if (pickUpThisItem == null || pickUpThisItem.Distance >= nearest.Distance)
+				{
+					if (nearest.RequiresDelay && _sinceLastClick.ElapsedMilliseconds < Settings.MiscClickDelay)
+					{
+						Debug($"{nearest.Kind} click gated: sinceLast={_sinceLastClick.ElapsedMilliseconds} < delay={Settings.MiscClickDelay}");
+						return false;
+					}
+					Debug($"Picking {nearest.Kind}: dist={nearest.Distance:F1}");
+					await PickAsync(nearest.Entity, nearest.Target, null, nearest.ForceUpdate);
+					return true;
+				}
+			}
 
-            if (Settings.ClickChests && Settings.MiscPickit)
-            {
-                if (GameController.Area?.CurrentArea is { IsHideout: true } or { IsTown: true })
-                {
-                    Debug("Skip chests: in town/hideout");
-                    return false;
-                }
+			if (pickUpThisItem == null)
+			{
+				Debug("No item to pick");
+				return true;
+			}
 
-                var chestLabel = _chestLabels?.Value.FirstOrDefault(x =>
-                    x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange);
-
-                if (DebugOn)
-                {
-                    var target = chestLabel?.Label?.GetChildFromIndices(0, 2, 1) ?? chestLabel?.Label;
-                    var clickable = target != null && IsLabelClickable(target, null);
-                    Debug(chestLabel != null
-                        ? $"Chest candidate: meta={chestLabel.ItemOnGround.Metadata}, dist={chestLabel.ItemOnGround.DistancePlayer:F1}, clickable={clickable}"
-                        : "No chest candidate");
-                }
-
-                if (chestLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= chestLabel.ItemOnGround.DistancePlayer))
-                {
-                    var chestTarget = chestLabel.Label?.GetChildFromIndices(0, 2, 1) ?? chestLabel.Label;
-                    Debug($"Picking chest: meta={chestLabel.ItemOnGround.Metadata}");
-                    await PickAsync(chestLabel.ItemOnGround, chestTarget, null, _chestLabels.ForceUpdate);
-                    return true;
-                }
-            }
-
-            if (Settings.ClickPortals && Settings.MiscPickit)
-            {
-                if (GameController.Area?.CurrentArea is { IsHideout: true } or { IsTown: true })
-                {
-                    Debug("Skip portals: in town/hideout");
-                    return false;
-                }
-
-                var portalLabel = _portalLabels?.Value.FirstOrDefault(x =>
-                    x.ItemOnGround.DistancePlayer <= Settings.MiscPickitRange &&
-                    IsLabelClickable(x.Label, null));
-
-                Debug(portalLabel != null
-                    ? $"Portal candidate: meta={portalLabel.ItemOnGround.Metadata}, dist={portalLabel.ItemOnGround.DistancePlayer:F1}"
-                    : "No portal candidate");
-
-                if (portalLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= portalLabel.ItemOnGround.DistancePlayer))
-                {
-                    if (_sinceLastClick.ElapsedMilliseconds < Settings.MiscClickDelay)
-                    {
-                        Debug($"Portal click gated: sinceLast={_sinceLastClick.ElapsedMilliseconds} < delay={Settings.MiscClickDelay}");
-                        return false;
-                    }
-                    Debug("Picking portal");
-                    await PickAsync(portalLabel.ItemOnGround, portalLabel.Label, null, _portalLabels.ForceUpdate);
-                    return true;
-                }
-            }
-
-            if (Settings.ClickTransitions && Settings.MiscPickit)
-            {
-                if (GameController.Area?.CurrentArea is { IsHideout: true } or { IsTown: true })
-                {
-                    Debug("Skip transitions: in town/hideout");
-                    return false;
-                }
-
-                var transitionLabel = _transitionLabel?.Value;
-
-                if (DebugOn && transitionLabel != null)
-                {
-                    var clickable = IsLabelClickable(transitionLabel.Label, null);
-                    Debug($"Transition candidate: meta={transitionLabel.ItemOnGround.Metadata}, dist={transitionLabel.ItemOnGround.DistancePlayer:F1}, clickable={clickable}");
-                }
-
-                if (transitionLabel != null && (pickUpThisItem == null || pickUpThisItem.Distance >= transitionLabel.ItemOnGround.DistancePlayer))
-                {
-                    if (_sinceLastClick.ElapsedMilliseconds < Settings.MiscClickDelay)
-                    {
-                        Debug($"Transition click gated: sinceLast={_sinceLastClick.ElapsedMilliseconds} < delay={Settings.MiscClickDelay}");
-                        return false;
-                    }
-                    Debug("Picking transition");
-                    await PickAsync(transitionLabel.ItemOnGround, transitionLabel.Label, null, _transitionLabel.ForceUpdate);
-                    return true;
-                }
-            }
-
-            if (pickUpThisItem == null)
-            {
-                Debug("No item to pick");
-                return true;
-            }
-
-            pickUpThisItem.AttemptedPickups++;
-            Debug($"Picking item: name={pickUpThisItem.BaseName}, dist={pickUpThisItem.Distance:F1}");
-            await PickAsync(pickUpThisItem.QueriedItem.Entity, pickUpThisItem.QueriedItem.Label, null, () => { });
-        }
+			pickUpThisItem.AttemptedPickups++;
+			Debug($"Picking item: name={pickUpThisItem.BaseName}, dist={pickUpThisItem.Distance:F1}");
+			await PickAsync(pickUpThisItem.QueriedItem.Entity, pickUpThisItem.QueriedItem.Label, null, () => { });
+		}
 
         return true;
     }
@@ -832,21 +777,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private IEnumerable<PickItItemData> GetItemsToPickup(bool filterAttempts)
     {
         var labelsRaw = GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelElement?.VisibleGroundItemLabels;
-        if (DebugOn && labelsRaw != null)
-        {
-            var arr = labelsRaw.ToList();
-            var total = arr.Count;
-            var inRangeCount = arr.Count(x => x.Entity?.DistancePlayer is { } d && d < Settings.ItemPickitRange);
-            var clickableCount = arr.Count(x => x.Entity?.Path != null && IsLabelClickable(x.Label, null));
-            var afterPipe = arr
-                .Where(x => x.Entity?.DistancePlayer is { } distance && distance < Settings.ItemPickitRange)
-                .Where(x => x.Entity?.Path != null && IsLabelClickable(x.Label, null))
-                .Select(x => new PickItItemData(x, GameController))
-                .Where(x => x.Entity != null && (!filterAttempts || x.AttemptedPickups == 0) && DoWePickThis(x)
-                            && (Settings.PickUpWhenInventoryIsFull || CanFitInventory(x)))
-                .Count();
-            Debug($"GetItemsToPickup counts: total={total}, inRange={inRangeCount}, clickable={clickableCount}, afterFilters={afterPipe}");
-        }
 
         var labels = labelsRaw?
             .Where(x=> x.Entity?.DistancePlayer is {} distance && distance < Settings.ItemPickitRange)
@@ -916,10 +846,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 var maxX = padded.X + padded.Width - 1; var maxY = padded.Y + padded.Height - 1;
                 var clampedX = Math.Max(minX, Math.Min(maxX, position.X));
                 var clampedY = Math.Max(minY, Math.Min(maxY, position.Y));
-                if (DebugOn && (Math.Abs(clampedX - position.X) > float.Epsilon || Math.Abs(clampedY - position.Y) > float.Epsilon))
-                {
-                    Debug($"PickAsync: clamped click from {position} to <{clampedX}, {clampedY}> within window=({padded.X:F0},{padded.Y:F0},{padded.Width:F0},{padded.Height:F0})");
-                }
                 position = new Vector2(clampedX, clampedY);
 
                 if (!IsTargeted(item, label))
