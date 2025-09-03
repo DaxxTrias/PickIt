@@ -51,7 +51,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private bool OkayToClick => _sinceLastClick.ElapsedMilliseconds > Settings.PauseBetweenClicks;
 
     // Debug helpers gated by profiler hotkey
-    private bool DebugOn = true;
+    private bool DebugOn = false;
     private void Debug(string message)
     {
         if (DebugOn)
