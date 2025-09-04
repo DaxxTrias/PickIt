@@ -612,6 +612,11 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (label?.ItemOnGround == null)
             return false;
 
+        // Do not allow strongboxes to trigger lazy-loot proximity checks
+        var metadata = label.ItemOnGround.Metadata;
+        if (metadata != null && metadata.IndexOf("strongbox", StringComparison.OrdinalIgnoreCase) >= 0)
+            return false;
+
         var itemPos = label.ItemOnGround.Pos;
         var playerPos = GameController.Player.Pos;
         return Math.Abs(itemPos.Z - playerPos.Z) <= 50 &&
@@ -804,6 +809,15 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     foreach (var ch in _chestLabels?.Value ?? Enumerable.Empty<LabelOnGround>())
                     {
                         if (ch?.ItemOnGround == null) continue;
+
+                        // Skip strongboxes during Lazy mode to avoid lock-in while activated
+                        if (workMode == WorkMode.Lazy)
+                        {
+                            var meta = ch.ItemOnGround.Metadata;
+                            if (meta != null && meta.IndexOf("strongbox", StringComparison.OrdinalIgnoreCase) >= 0)
+                                continue;
+                        }
+
                         var dist = ch.ItemOnGround.DistancePlayer;
                         if (dist <= Settings.MiscPickitRange && IsLabelClickable(ch.Label, null))
                         {
