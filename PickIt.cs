@@ -614,7 +614,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         // Do not allow strongboxes to trigger lazy-loot proximity checks
         var metadata = label.ItemOnGround.Metadata;
-        if (metadata != null && metadata.IndexOf("strongbox", StringComparison.OrdinalIgnoreCase) >= 0)
+        if (metadata != null && metadata.Contains("strongbox", StringComparison.OrdinalIgnoreCase))
             return false;
 
         var itemPos = label.ItemOnGround.Pos;
@@ -814,7 +814,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                         if (workMode == WorkMode.Lazy)
                         {
                             var meta = ch.ItemOnGround.Metadata;
-                            if (meta != null && meta.IndexOf("strongbox", StringComparison.OrdinalIgnoreCase) >= 0)
+                            if (meta != null && meta.Contains("strongbox", StringComparison.OrdinalIgnoreCase))
                                 continue;
                         }
 
