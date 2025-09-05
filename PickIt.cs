@@ -132,6 +132,11 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (Input.GetKeyState(Settings.PickUpKey.Value.Key) || _pluginBridgeModeOverride)
         {
+            // Honor enemy-proximity safety for manual mode as well
+            if (!IsItSafeToPickit())
+            {
+                return WorkMode.Stop;
+            }
             return WorkMode.Manual;
         }
 
@@ -415,24 +420,15 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         try
         {
-            var monsters = wrapper.ValidEntitiesByType[EntityType.Monster];
-            var playerPos = player.Pos;
-            var near = monsters.FirstOrDefault(x => x?.GetComponent<Monster>() != null && x.IsValid && x.IsHostile && x.IsAlive
-                                  && !x.IsHidden && x.Path != null && !x.Path.Contains("ElementalSummoned")
-                                  && x.GetComponent<Render>() is { } render
-                                  && Vector3.Distance(playerPos, render.Pos) <= Settings.EnemyProximityRange);
-            if (near != null)
-            {
-                try
-                {
-                    var render = near.GetComponent<Render>();
-                    var dist = Vector3.Distance(playerPos, render.Pos);
-                }
-                catch
-                {
-                }
-                return false;
-            }
+            if (!wrapper.ValidEntitiesByType.TryGetValue(EntityType.Monster, out var monsters) || monsters == null)
+                return true;
+
+            var near = monsters.FirstOrDefault(x =>
+                x != null && x.IsValid && x.IsHostile && x.IsAlive && !x.IsHidden &&
+                x.Path != null && !x.Path.Contains("ElementalSummoned") &&
+                x.DistancePlayer <= Settings.EnemyProximityRange);
+
+            return near == null;
         }
         catch (Exception)
         {
@@ -619,13 +615,14 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 var player = GameController?.Player;
                 if (wrapper?.ValidEntitiesByType != null && player != null)
                 {
-                    var playerPos = player.Pos;
-                    var monsters = wrapper.ValidEntitiesByType[EntityType.Monster];
-                    if (monsters.Any(x => x?.GetComponent<Monster>() != null && x.IsValid && x.IsHostile && x.IsAlive
-                                          && !x.IsHidden && x.Path != null && !x.Path.Contains("ElementalSummoned")
-                                          && x.GetComponent<Render>() is { } render
-                                          && Vector3.Distance(playerPos, render.Pos) < Settings.EnemyProximityRange))
-                        return false;
+                    if (wrapper.ValidEntitiesByType.TryGetValue(EntityType.Monster, out var monsters) && monsters != null)
+                    {
+                        if (monsters.Any(x =>
+                                x != null && x.IsValid && x.IsHostile && x.IsAlive && !x.IsHidden &&
+                                x.Path != null && !x.Path.Contains("ElementalSummoned") &&
+                                x.DistancePlayer < Settings.EnemyProximityRange))
+                            return false;
+                    }
                 }
             }
         }
@@ -801,6 +798,10 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private async SyncTask<bool> RunPickerIterationAsync()
     {
         if (!GameController.Window.IsForeground()) return true;
+
+        // Honor "No Looting Near Enemies" for all modes (manual/lazy)
+        if (!IsItSafeToPickit())
+            return true;
 
         // If auto-click-on-hover is enabled and we currently have a hovered item icon,
         // let the lightweight tick-path handle the click to avoid fighting over the cursor.
