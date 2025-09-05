@@ -75,6 +75,9 @@ public class PickItSettings : ISettings
     [ConditionalDisplay(nameof(MiscPickit), true)]
     [Menu("Click Portals", "Click portals when in range. Uses separate misc click delay pacing.")]
     public ToggleNode ClickPortals { get; set; } = new ToggleNode(false);
+    [ConditionalDisplay(nameof(MiscPickit), true)]
+    [Menu("Click Shrines", "Click shrines when in range.")]
+    public ToggleNode ClickShrines { get; set; } = new ToggleNode(true);
 
     [JsonIgnore]
     public TextNode FilterTest { get; set; } = new TextNode();

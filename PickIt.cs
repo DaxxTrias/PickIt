@@ -33,7 +33,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private readonly CachedValue<List<LabelOnGround>> _portalLabels;
     private readonly CachedValue<LabelOnGround> _transitionLabel;
     private readonly CachedValue<List<LabelOnGround>> _corpseLabels;
-    private readonly CachedValue<List<LabelOnGround>> _shrineLabels;
     private readonly CachedValue<bool[,]> _inventorySlotsCache;
     private ServerInventory _inventoryItems;
     private SyncTask<bool> _pickUpTask;
@@ -90,7 +89,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         _corpseLabels = new TimeCache<List<LabelOnGround>>(UpdateCorpseList, 200);
         _portalLabels = new TimeCache<List<LabelOnGround>>(UpdatePortalList, 200);
         _transitionLabel = new TimeCache<LabelOnGround>(() => GetLabel(@"Metadata/MiscellaneousObjects/AreaTransition_Animate"), 200);
-        _shrineLabels = new TimeCache<List<LabelOnGround>>(UpdateShrineList, 200);
     }
 
     public override bool Initialise()
@@ -238,6 +236,30 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 Consider(_chestLabels?.Value, Settings.ClickChests, false);
                 Consider(_corpseLabels?.Value, Settings.ClickCorpses, false);
                 Consider(_portalLabels?.Value, Settings.ClickPortals, true);
+                // Shrines have no labels; handled via entity targeting below
+
+                // Shrine hovered fallback via targeting (labels may be absent for shrines)
+                if (Settings.ClickShrines)
+                {
+                    var nearestShrine = GetAvailableShrineEntities()
+                        .Select(e => (Entity: e, Dist: e.DistancePlayer))
+                        .Where(t => t.Dist <= Settings.MiscPickitRange)
+                        .OrderBy(t => t.Dist)
+                        .FirstOrDefault();
+                    if (nearestShrine.Entity != null && IsTargeted(nearestShrine.Entity, null))
+                    {
+                        if (Settings.IgnoreMoving && GameController.Player?.GetComponent<Actor>()?.isMoving == true &&
+                            nearestShrine.Dist > Settings.ItemDistanceToIgnoreMoving.Value)
+                        {
+                            // skip
+                        }
+                        else if (OkayToClick)
+                        {
+                            _sinceLastClick.Restart();
+                            Input.Click(MouseButtons.Left);
+                        }
+                    }
+                }
 
                 if (Settings.ClickTransitions && _transitionLabel?.Value is { } t && t.Label != null && t.ItemOnGround != null)
                 {
@@ -307,6 +329,16 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 foreach (var chest in _chestLabels.Value)
                 {
                     Graphics.DrawFrame(chest.Label.GetClientRect(), Color.Violet, 5);
+                }
+            }
+            if (Settings.MiscPickit && Settings.ClickShrines)
+            {
+                // Entity-based debug highlight for shrines (no labels)
+                foreach (var e in GetAvailableShrineEntities())
+                {
+                    var rect = MakeEntityClickRect(e);
+                    if (rect != RectangleF.Empty)
+                        Graphics.DrawFrame(rect, Color.Violet, 5);
                 }
             }
         }
@@ -544,10 +576,35 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             .ToList() ?? [];
     }
 
-    private List<LabelOnGround> UpdateShrineList()
+    // Removed label-based UpdateShrineList; shrines are entity-only
+
+    private IEnumerable<Entity> GetAvailableShrineEntities()
     {
-        // Disabled shrines for now
-        return [];
+        var all = GameController?.EntityListWrapper?.OnlyValidEntities ?? [];
+        foreach (var e in all)
+        {
+            if (e == null || !e.IsValid) continue;
+            if (!e.TryGetComponent<Shrine>(out var shrine)) continue;
+            if (shrine?.IsAvailable != true) continue;
+            yield return e;
+        }
+    }
+
+    private RectangleF MakeEntityClickRect(Entity e)
+    {
+        try
+        {
+            var pos = e?.GetComponent<Render>()?.Pos ?? e?.Pos ?? default;
+            var screen = GameController?.IngameState?.Camera?.WorldToScreen(pos) ?? Vector2.Zero;
+            if (screen == Vector2.Zero) return RectangleF.Empty;
+            const float halfW = 18f; // modest clickable box around nameplate center
+            const float halfH = 9f;
+            return new RectangleF(screen.X - halfW, screen.Y - halfH, halfW * 2, halfH * 2);
+        }
+        catch
+        {
+            return RectangleF.Empty;
+        }
     }
 
     private bool CanLazyLoot()
@@ -625,6 +682,20 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private bool IsLabelClickable(Element element, RectangleF? customRect)
     {
+        // Allow custom rectangles without requiring an Element (for entity-based targets like Shrines)
+        if (element == null && customRect != null)
+        {
+            var rectCustom = customRect.Value;
+            var gameWindowRectCustom = GameController.Window.GetWindowRectangleTimeCache with { Location = Vector2.Zero };
+            gameWindowRectCustom.Inflate(-36, -36);
+            var rectRightC = rectCustom.X + rectCustom.Width;
+            var rectBottomC = rectCustom.Y + rectCustom.Height;
+            var winRightC = gameWindowRectCustom.X + gameWindowRectCustom.Width;
+            var winBottomC = gameWindowRectCustom.Y + gameWindowRectCustom.Height;
+            var intersectsC = rectCustom.X < winRightC && rectRightC > gameWindowRectCustom.X && rectCustom.Y < winBottomC && rectBottomC > gameWindowRectCustom.Y;
+            return intersectsC;
+        }
+
         if (element is not { IsValid: true, IsVisible: true, IndexInParent: not null })
         {
             return false;
@@ -757,6 +828,15 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 {
                     return true;
                 }
+
+                // Also defer when a shrine entity is targeted under cursor
+                if (Settings.ClickShrines)
+                {
+                    var anyTargetedShrine = GetAvailableShrineEntities()
+                        .Any(e => IsTargeted(e, null));
+                    if (anyTargetedShrine)
+                        return true;
+                }
             }
         }
 
@@ -768,12 +848,13 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (workMode == WorkMode.Manual || workMode == WorkMode.Lazy && (ShouldLazyLoot(pickUpThisItem) ||
             ShouldLazyLootMisc(_portalLabels.Value.FirstOrDefault()) ||
             /* shrines disabled */ false ||
-            ShouldLazyLootMisc(_chestLabels.Value.FirstOrDefault())))
+            ShouldLazyLootMisc(_chestLabels.Value.FirstOrDefault())
+            || (Settings.MiscPickit && Settings.ClickShrines && GetAvailableShrineEntities().Any())))
         {
             var inTownOrHideout = GameController.Area?.CurrentArea is { IsHideout: true } or { IsTown: true };
 
             // Merge misc candidates across types and choose the globally nearest
-            var candidates = new List<(string Kind, Entity Entity, Element Target, float Distance, Action ForceUpdate, bool RequiresDelay)>();
+            var candidates = new List<(string Kind, Entity Entity, Element Target, float Distance, Action ForceUpdate, bool RequiresDelay, RectangleF? CustomRect)>();
 
             if (Settings.MiscPickit && !inTownOrHideout)
             {
@@ -786,7 +867,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                         if (dist <= Settings.MiscPickitRange && IsLabelClickable(c.Label, null))
                         {
                             var target = c.Label;
-                            candidates.Add(("corpse", c.ItemOnGround, target, dist, _corpseLabels.ForceUpdate, false));
+                            candidates.Add(("corpse", c.ItemOnGround, target, dist, _corpseLabels.ForceUpdate, false, null));
                         }
                     }
                 }
@@ -799,7 +880,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                         var dist = door.ItemOnGround.DistancePlayer;
                         if (dist <= Settings.MiscPickitRange && IsLabelClickable(door.Label, null))
                         {
-                            candidates.Add(("door", door.ItemOnGround, door.Label, dist, _doorLabels.ForceUpdate, false));
+                            candidates.Add(("door", door.ItemOnGround, door.Label, dist, _doorLabels.ForceUpdate, false, null));
                         }
                     }
                 }
@@ -822,8 +903,22 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                         if (dist <= Settings.MiscPickitRange && IsLabelClickable(ch.Label, null))
                         {
                             var target = ch.Label;
-                            candidates.Add(("chest", ch.ItemOnGround, target, dist, _chestLabels.ForceUpdate, false));
+                            candidates.Add(("chest", ch.ItemOnGround, target, dist, _chestLabels.ForceUpdate, false, null));
                         }
+                    }
+                }
+
+                if (Settings.ClickShrines)
+                {
+                    // Fallback and primary: shrine entities (no labels)
+                    foreach (var e in GetAvailableShrineEntities())
+                    {
+                        var dist = e.DistancePlayer;
+                        if (dist > Settings.MiscPickitRange) continue;
+                        var rect = MakeEntityClickRect(e);
+                        if (rect == RectangleF.Empty) continue;
+                        if (!IsLabelClickable(null, rect)) continue;
+                        candidates.Add(("shrine", e, null, dist, () => { }, false, rect));
                     }
                 }
 
@@ -835,7 +930,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                         var dist = p.ItemOnGround.DistancePlayer;
                         if (dist <= Settings.MiscPickitRange && IsLabelClickable(p.Label, null))
                         {
-                            candidates.Add(("portal", p.ItemOnGround, p.Label, dist, _portalLabels.ForceUpdate, true));
+                            candidates.Add(("portal", p.ItemOnGround, p.Label, dist, _portalLabels.ForceUpdate, true, null));
                         }
                     }
                 }
@@ -849,7 +944,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                         var target = t.Label;
                         if (IsLabelClickable(target, null))
                         {
-                            candidates.Add(("transition", t.ItemOnGround, target, dist, _transitionLabel.ForceUpdate, true));
+                            candidates.Add(("transition", t.ItemOnGround, target, dist, _transitionLabel.ForceUpdate, true, null));
                         }
                     }
                 }
@@ -864,7 +959,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     {
                         return false;
                     }
-                    await PickAsync(nearest.Entity, nearest.Target, null, nearest.ForceUpdate);
+                    await PickAsync(nearest.Entity, nearest.Target, nearest.CustomRect, nearest.ForceUpdate);
                     return true;
                 }
             }
@@ -906,7 +1001,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             var tryCount = 0;
             while (tryCount < 3)
             {
-                if (label == null)
+                if (label == null && customRect == null)
                 {
                     onNonClickable();
                     return true;
