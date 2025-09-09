@@ -83,7 +83,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     public PickIt()
     {
-        _inventorySlotsCache = new FrameCache<bool[,]>(() => GetContainer2DArray(_inventoryItems));
+        _inventorySlotsCache = new FrameCache<bool[,]>(() => _inventoryItems != null ? GetContainer2DArray(_inventoryItems) : new bool[5,12]);
         _chestLabels = new TimeCache<List<LabelOnGround>>(UpdateChestList, 200);
         _doorLabels = new TimeCache<List<LabelOnGround>>(UpdateDoorList, 200);
         _corpseLabels = new TimeCache<List<LabelOnGround>>(UpdateCorpseList, 200);
@@ -326,14 +326,16 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             {
                 foreach (var door in _doorLabels.Value)
                 {
-                    Graphics.DrawFrame(door.Label.GetClientRect(), Color.Violet, 5);
+                    if (door?.Label != null)
+                        Graphics.DrawFrame(door.Label.GetClientRect(), Color.Violet, 5);
                 }
             }
             if (Settings.MiscPickit && Settings.ClickChests)
             {
                 foreach (var chest in _chestLabels.Value)
                 {
-                    Graphics.DrawFrame(chest.Label.GetClientRect(), Color.Violet, 5);
+                    if (chest?.Label != null)
+                        Graphics.DrawFrame(chest.Label.GetClientRect(), Color.Violet, 5);
                 }
             }
             if (Settings.MiscPickit && Settings.ClickShrines)
@@ -469,10 +471,15 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 .ToList() ?? [];
         }
 
-        return ui?.ItemsOnGroundLabels
-            .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
-            .OrderBy(x => x.ItemOnGround.DistancePlayer)
-            .ToList() ?? [];
+        var labels = ui?.ItemsOnGroundLabels;
+        if (labels != null)
+        {
+            return labels
+                .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
+                .OrderBy(x => x.ItemOnGround.DistancePlayer)
+                .ToList() ?? [];
+        }
+        return [];
     }
 
     private List<LabelOnGround> UpdateDoorList()
@@ -499,10 +506,15 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 .ToList() ?? [];
         }
 
-        return ui?.ItemsOnGroundLabels
-            .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
-            .OrderBy(x => x.ItemOnGround.DistancePlayer)
-            .ToList() ?? [];
+        var labels = ui?.ItemsOnGroundLabels;
+        if (labels != null)
+        {
+            return labels
+                .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
+                .OrderBy(x => x.ItemOnGround.DistancePlayer)
+                .ToList() ?? [];
+        }
+        return [];
     }
 
     private List<LabelOnGround> UpdateCorpseList()
@@ -530,10 +542,15 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 .ToList() ?? [];
         }
 
-        return ui?.ItemsOnGroundLabels
-            .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
-            .OrderBy(x => x.ItemOnGround.DistancePlayer)
-            .ToList() ?? [];
+        var labels = ui?.ItemsOnGroundLabels;
+        if (labels != null)
+        {
+            return labels
+                .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
+                .OrderBy(x => x.ItemOnGround.DistancePlayer)
+                .ToList() ?? [];
+        }
+        return [];
     }
 
     private List<LabelOnGround> UpdatePortalList()
@@ -566,10 +583,15 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 .ToList() ?? [];
         }
 
-        return ui?.ItemsOnGroundLabels
-            .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
-            .OrderBy(x => x.ItemOnGround.DistancePlayer)
-            .ToList() ?? [];
+        var labels = ui?.ItemsOnGroundLabels;
+        if (labels != null)
+        {
+            return labels
+                .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
+                .OrderBy(x => x.ItemOnGround.DistancePlayer)
+                .ToList() ?? [];
+        }
+        return [];
     }
 
     // Removed label-based UpdateShrineList; shrines are entity-only
@@ -1008,7 +1030,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     return true;
                 }
 
-                if (Settings.IgnoreMoving && item != null && GameController.Player.GetComponent<Actor>().isMoving)
+                if (Settings.IgnoreMoving && item != null && GameController.Player?.GetComponent<Actor>()?.isMoving == true)
                 {
                     if (item.DistancePlayer > Settings.ItemDistanceToIgnoreMoving.Value)
                     {
@@ -1017,7 +1039,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     }
                 }
 
-                var rect = customRect ?? label.GetClientRect();
+                var rect = customRect ?? (label?.GetClientRect() ?? default);
                 Vector2 position;
                 if (rect.Width <= 1 || rect.Height <= 1)
                 {
@@ -1103,7 +1125,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     private static async SyncTask<bool> SetCursorPositionAsync(Vector2 position, Entity item, Element label)
     {
         Input.SetCursorPos(position);
-        return await TaskUtils.CheckEveryFrame(() => IsTargeted(item, label), new CancellationTokenSource(150).Token);
+        using var cts = new CancellationTokenSource(150);
+        return await TaskUtils.CheckEveryFrame(() => IsTargeted(item, label), cts.Token);
     }
 
     #endregion
