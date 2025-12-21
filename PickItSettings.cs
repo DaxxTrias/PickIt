@@ -106,8 +106,9 @@ public class FilterNode
         if (ImGui.Button("Open filter Folder"))
         {
             var configDir = pickit.ConfigDirectory;
+            var parentDir = Path.GetDirectoryName(pickit.ConfigDirectory) ?? pickit.ConfigDirectory;
             var customConfigFileDirectory = !string.IsNullOrEmpty(pickit.Settings.CustomConfigDir)
-                ? Path.Combine(Path.GetDirectoryName(pickit.ConfigDirectory), pickit.Settings.CustomConfigDir)
+                ? Path.Combine(parentDir, pickit.Settings.CustomConfigDir)
                 : null;
 
             var directoryToOpen = Directory.Exists(customConfigFileDirectory)
