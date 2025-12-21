@@ -165,48 +165,125 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             _sinceLastClick.Restart();
         }
 
-        if (Settings.AutoClickHoveredLootInRange.Value && GetWorkMode() != WorkMode.Stop)
+        if (Settings.AutoClickHoveredLootInRange.Value)
         {
+            // Auto-click hovered loot should work independently of pickup key state
+            // Only check basic safety conditions
+            if (!GameController.Window.IsForeground() || 
+                !Settings.Enable || 
+                Input.GetKeyState(Keys.Escape))
+            {
+                return;
+            }
+
             var hoverElement = UIHoverWithFallback;
             var hoverItemIcon = hoverElement?.AsObject<HoverItemIcon>();
+            
+            // Always log when profiler key is held to diagnose failures
+            if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+            {
+                DebugWindow.LogMsg($"AutoClickHovered: Enabled, HoverIcon={(hoverItemIcon != null ? "YES" : "NULL")}, " +
+                    $"InvVisible={GameController?.IngameState?.IngameUi?.InventoryPanel?.IsVisible}, " +
+                    $"LButtonDown={Input.IsKeyDown(Keys.LButton)}");
+            }
+
             if (hoverItemIcon != null && GameController?.IngameState?.IngameUi?.InventoryPanel is { IsVisible: false } &&
                 !Input.IsKeyDown(Keys.LButton))
             {
                 if (hoverItemIcon.Item != null && OkayToClick)
                 {
-                    var groundItem =
-                        GameController?.IngameState?.IngameUi?.ItemsOnGroundLabels?
-                            .FirstOrDefault(e => e.Label.Address == hoverItemIcon.Address);
-                    if (groundItem != null)
+                    // Match the hovered label address to find the ground description
+                    var visibleLabels = GameController?.IngameState?.IngameUi?.ItemsOnGroundLabelElement?.VisibleGroundItemLabels;
+                    if (visibleLabels == null)
                     {
-                        if (!IsItSafeToPickit())
-                            return;
-
-                        // Capacity check
-                        var capacityOk = Settings.PickUpWhenInventoryIsFull || CanFitInventory(new ItemData(groundItem, GameController));
-
-                        // Filter match
-                        var doWePickThis = capacityOk && (Settings.PickUpEverything || (_itemFilters?.Any(filter =>
-                            filter.Matches(new ItemData(groundItem, GameController))) ?? false));
-
-                        var distance = groundItem?.ItemOnGround.DistancePlayer ?? float.MaxValue;
                         if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
-                        {
-                            DebugWindow.LogMsg($"HoverClick check: dist={distance:F1}, range={Settings.ItemPickitRange}, match={doWePickThis}, ok={OkayToClick}, capacity={capacityOk}");
-                        }
+                            DebugWindow.LogMsg($"HoverClick: VisibleGroundItemLabels is NULL");
+                        return;
+                    }
 
-                        // Ignore moving
-                        if (Settings.IgnoreMoving && GameController.Player?.GetComponent<Actor>()?.isMoving == true &&
-                            distance > Settings.ItemDistanceToIgnoreMoving.Value)
+                    // Find the ground item description that matches the hovered label address
+                    var groundDescription = visibleLabels.FirstOrDefault(desc => desc.Label?.Address == hoverItemIcon.Address);
+                    if (groundDescription.Label == null || groundDescription.Entity == null)
+                    {
+                        if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                            DebugWindow.LogMsg($"HoverClick: No matching ground description found");
+                        return;
+                    }
+
+                    var entity = groundDescription.Entity;
+                    if (!entity.IsValid)
+                    {
+                        if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                            DebugWindow.LogMsg($"HoverClick: entity invalid");
+                        return;
+                    }
+
+                    // Get WorldItem component to access the actual item entity
+                    WorldItem worldItem = null;
+                    try
+                    {
+                        if (!entity.TryGetComponent(out worldItem) || worldItem == null)
                         {
+                            if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                                DebugWindow.LogMsg($"HoverClick: No WorldItem component");
                             return;
                         }
+                    }
+                    catch
+                    {
+                        if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                            DebugWindow.LogMsg($"HoverClick: Exception getting WorldItem component");
+                        return;
+                    }
 
-                        if (doWePickThis && distance <= Settings.ItemPickitRange)
-                        {
-                            _sinceLastClick.Restart();
-                            Input.Click(MouseButtons.Left);
-                        }
+                    var itemEntity = worldItem.ItemEntity;
+                    if (itemEntity == null || !itemEntity.IsValid)
+                    {
+                        if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                            DebugWindow.LogMsg($"HoverClick: itemEntity null or invalid");
+                        return;
+                    }
+
+                    if (!IsItSafeToPickit())
+                    {
+                        if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                            DebugWindow.LogMsg($"HoverClick: Not safe to pick");
+                        return;
+                    }
+
+                    // Capacity check using ItemData from the actual item entity
+                    var itemData = new ItemData(itemEntity, GameController);
+                    var capacityOk = Settings.PickUpWhenInventoryIsFull || CanFitInventory(itemData);
+
+                    // Filter match
+                    var doWePickThis = capacityOk && (Settings.PickUpEverything || (_itemFilters?.Any(filter =>
+                        filter.Matches(itemData)) ?? false));
+
+                    var distance = entity.DistancePlayer;
+                    if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                    {
+                        DebugWindow.LogMsg($"HoverClick check: dist={distance:F1}, range={Settings.ItemPickitRange}, match={doWePickThis}, ok={OkayToClick}, capacity={capacityOk}");
+                    }
+
+                    // Ignore moving
+                    if (Settings.IgnoreMoving && GameController.Player?.GetComponent<Actor>()?.isMoving == true &&
+                        distance > Settings.ItemDistanceToIgnoreMoving.Value)
+                    {
+                        if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                            DebugWindow.LogMsg($"HoverClick: Ignoring due to movement");
+                        return;
+                    }
+
+                    if (doWePickThis && distance <= Settings.ItemPickitRange)
+                    {
+                        _sinceLastClick.Restart();
+                        Input.Click(MouseButtons.Left);
+                        if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                            DebugWindow.LogMsg($"HoverClick: CLICKED!");
+                    }
+                    else if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                    {
+                        DebugWindow.LogMsg($"HoverClick: NOT CLICKED - doWePickThis={doWePickThis}, dist={distance:F1}, range={Settings.ItemPickitRange}");
                     }
                 }
             }
@@ -743,23 +820,25 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
     private LabelOnGround GetLabel(string id)
     {
-        var labels = GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabels;
-        if (labels == null)
+        // Try the old API first (ItemsOnGroundLabelsVisible) if it still exists
+        var labelsOldApi = GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelsVisible;
+        if (labelsOldApi != null)
         {
-            return null;
+            var regex = _labelRegexCache.GetOrAdd(id, key => new Regex(key, RegexOptions.Compiled));
+            var labelQuery =
+                from labelOnGround in labelsOldApi
+                where labelOnGround?.Label is { IsValid: true, Address: > 0, IsVisible: true }
+                let itemOnGround = labelOnGround.ItemOnGround
+                where itemOnGround?.Metadata is { } metadata && regex.IsMatch(metadata)
+                let dist = GameController?.Player?.GridPos.DistanceSquared(itemOnGround.GridPos)
+                orderby dist
+                select labelOnGround;
+
+            return labelQuery.FirstOrDefault();
         }
 
-        var regex = _labelRegexCache.GetOrAdd(id, key => new Regex(key, RegexOptions.Compiled));
-        var labelQuery =
-            from labelOnGround in labels
-            where labelOnGround?.Label is { IsValid: true, Address: > 0, IsVisible: true }
-            let itemOnGround = labelOnGround.ItemOnGround
-            where itemOnGround?.Metadata is { } metadata && regex.IsMatch(metadata)
-            let dist = GameController?.Player?.GridPos.DistanceSquared(itemOnGround.GridPos)
-            orderby dist
-            select labelOnGround;
-
-        return labelQuery.FirstOrDefault();
+        // Fallback: Use new API but warn that it won't work
+        return null;
     }
 
 
@@ -1003,17 +1082,28 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     {
         var labelsRaw = GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabelElement?.VisibleGroundItemLabels;
 
-        var labels = labelsRaw?
+        if (labelsRaw == null)
+        {
+            if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                DebugWindow.LogMsg($"GetItemsToPickup: VisibleGroundItemLabels is NULL");
+            return [];
+        }
+
+        var labels = labelsRaw
             .Where(x=> x.Entity?.DistancePlayer is {} distance && distance < Settings.ItemPickitRange)
             .OrderBy(x => x.Entity?.DistancePlayer ?? int.MaxValue);
 
-        return labels?
-            .Where(x => x.Entity?.Path != null && IsLabelClickable(x.Label, null))
+        var clickable = labels.Where(x => x.Entity?.Path != null && IsLabelClickable(x.Label, null)).ToList();
+        
+        if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+            DebugWindow.LogMsg($"GetItemsToPickup: {labelsRaw.Count()} total, {labels.Count()} in range, {clickable.Count} clickable");
+
+        return clickable
             .Select(x => new PickItItemData(x, GameController))
             .Where(x => x.Entity != null
                         && (!filterAttempts || x.AttemptedPickups == 0)
                         && DoWePickThis(x)
-                        && (Settings.PickUpWhenInventoryIsFull || CanFitInventory(x))) ?? [];
+                        && (Settings.PickUpWhenInventoryIsFull || CanFitInventory(x)));
     }
 
     private async SyncTask<bool> PickAsync(Entity item, Element label, RectangleF? customRect, Action onNonClickable)
