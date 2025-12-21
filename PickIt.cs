@@ -167,51 +167,53 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         if (Settings.AutoClickHoveredLootInRange.Value)
         {
-            // Auto-click hovered loot should work independently of pickup key state
-            // Only check basic safety conditions
-            if (!GameController.Window.IsForeground() || 
-                !Settings.Enable || 
-                Input.GetKeyState(Keys.Escape))
+            try
             {
-                return;
-            }
-
-            var hoverElement = UIHoverWithFallback;
-            var hoverItemIcon = hoverElement?.AsObject<HoverItemIcon>();
-            
-            // Always log when profiler key is held to diagnose failures
-            if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
-            {
-                DebugWindow.LogMsg($"AutoClickHovered: Enabled, HoverIcon={(hoverItemIcon != null ? "YES" : "NULL")}, " +
-                    $"InvVisible={GameController?.IngameState?.IngameUi?.InventoryPanel?.IsVisible}, " +
-                    $"LButtonDown={Input.IsKeyDown(Keys.LButton)}");
-            }
-
-            if (hoverItemIcon != null && GameController?.IngameState?.IngameUi?.InventoryPanel is { IsVisible: false } &&
-                !Input.IsKeyDown(Keys.LButton))
-            {
-                if (hoverItemIcon.Item != null && OkayToClick)
+                // Auto-click hovered loot should work independently of pickup key state
+                // Only check basic safety conditions
+                if (!GameController.Window.IsForeground() || 
+                    !Settings.Enable || 
+                    Input.GetKeyState(Keys.Escape))
                 {
-                    // Match the hovered label address to find the ground description
-                    var visibleLabels = GameController?.IngameState?.IngameUi?.ItemsOnGroundLabelElement?.VisibleGroundItemLabels;
-                    if (visibleLabels == null)
-                    {
-                        if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
-                            DebugWindow.LogMsg($"HoverClick: VisibleGroundItemLabels is NULL");
-                        return;
-                    }
+                    return;
+                }
 
-                    // Find the ground item description that matches the hovered label address
-                    var groundDescription = visibleLabels.FirstOrDefault(desc => desc.Label?.Address == hoverItemIcon.Address);
-                    if (groundDescription.Label == null || groundDescription.Entity == null)
+                var hoverElement = UIHoverWithFallback;
+                var hoverItemIcon = hoverElement?.AsObject<HoverItemIcon>();
+                
+                // Always log when profiler key is held to diagnose failures
+                if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                {
+                    DebugWindow.LogMsg($"AutoClickHovered: Enabled, HoverIcon={(hoverItemIcon != null ? "YES" : "NULL")}, " +
+                        $"InvVisible={GameController?.IngameState?.IngameUi?.InventoryPanel?.IsVisible}, " +
+                        $"LButtonDown={Input.IsKeyDown(Keys.LButton)}");
+                }
+
+                if (hoverItemIcon != null && GameController?.IngameState?.IngameUi?.InventoryPanel is { IsVisible: false } &&
+                    !Input.IsKeyDown(Keys.LButton))
+                {
+                    if (hoverItemIcon.Item != null && OkayToClick)
+                    {
+                        // Match the hovered label address to find the ground description
+                        var visibleLabels = GameController?.IngameState?.IngameUi?.ItemsOnGroundLabelElement?.VisibleGroundItemLabels;
+                        if (visibleLabels == null)
+                        {
+                            if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                                DebugWindow.LogMsg($"HoverClick: VisibleGroundItemLabels is NULL");
+                            return;
+                        }
+
+                        // Find the ground item description that matches the hovered label address
+                        var groundDescription = visibleLabels.FirstOrDefault(desc => desc.Label?.Address == hoverItemIcon.Address);
+                        if (groundDescription.Label == null || groundDescription.Entity == null || !groundDescription.Entity.IsValid)
                     {
                         if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
-                            DebugWindow.LogMsg($"HoverClick: No matching ground description found");
+                            DebugWindow.LogMsg($"HoverClick: No matching ground description found or entity invalid");
                         return;
                     }
 
                     var entity = groundDescription.Entity;
-                    if (!entity.IsValid)
+                    if (entity == null || !entity.IsValid)
                     {
                         if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
                             DebugWindow.LogMsg($"HoverClick: entity invalid");
@@ -236,7 +238,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                         return;
                     }
 
-                    var itemEntity = worldItem.ItemEntity;
+                    // ItemEntity can be null if item was just picked up
+                    var itemEntity = worldItem?.ItemEntity;
                     if (itemEntity == null || !itemEntity.IsValid)
                     {
                         if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
@@ -252,14 +255,25 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     }
 
                     // Capacity check using ItemData from the actual item entity
-                    var itemData = new ItemData(itemEntity, GameController);
+                    ItemData itemData = null;
+                    try
+                    {
+                        itemData = new ItemData(itemEntity, GameController);
+                    }
+                    catch
+                    {
+                        if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                            DebugWindow.LogMsg($"HoverClick: Exception creating ItemData");
+                        return;
+                    }
+
                     var capacityOk = Settings.PickUpWhenInventoryIsFull || CanFitInventory(itemData);
 
                     // Filter match
                     var doWePickThis = capacityOk && (Settings.PickUpEverything || (_itemFilters?.Any(filter =>
                         filter.Matches(itemData)) ?? false));
 
-                    var distance = entity.DistancePlayer;
+                    var distance = entity?.DistancePlayer ?? float.MaxValue;
                     if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
                     {
                         DebugWindow.LogMsg($"HoverClick check: dist={distance:F1}, range={Settings.ItemPickitRange}, match={doWePickThis}, ok={OkayToClick}, capacity={capacityOk}");
@@ -285,7 +299,12 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                     {
                         DebugWindow.LogMsg($"HoverClick: NOT CLICKED - doWePickThis={doWePickThis}, dist={distance:F1}, range={Settings.ItemPickitRange}");
                     }
+                    }
                 }
+            }
+            catch
+            {
+                // Silently handle exceptions during hover click (e.g., entity disappearing after pickup)
             }
         }
 
