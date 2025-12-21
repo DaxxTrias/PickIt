@@ -572,34 +572,53 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
     {
         static bool IsFittingEntity(Entity entity)
         {
-            return entity?.Path is { } path &&
-                   (path.StartsWith("Metadata/Chests", StringComparison.Ordinal) ||
-                   path.StartsWith("Metadata/Chests/", StringComparison.Ordinal) ||
-                   path.Contains("CampsiteChest", StringComparison.Ordinal)) &&
-                   entity.HasComponent<Chest>();
+            if (entity?.Path is not { } path)
+                return false;
+
+            return path.StartsWith("Metadata/Chests", StringComparison.Ordinal) ||
+                   path.Contains("CampsiteChest", StringComparison.Ordinal);
         }
 
         if (!IsItSafeToPickit())
             return [];
 
-        var ui = GameController?.Game?.IngameState?.IngameUi;
+        // Use ItemsOnGroundLabels (not VisibleGroundItemLabels) - includes all labeled entities
+        var labels = GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabels;
+        if (labels == null)
+            return [];
+
+        var result = new List<LabelOnGround>();
         
-        // Use new API: ItemsOnGroundLabelElement.VisibleGroundItemLabels
-        var visibleDescriptions = ui?.ItemsOnGroundLabelElement?.VisibleGroundItemLabels;
-        if (visibleDescriptions != null)
+        foreach (var label in labels)
         {
-            var result = new List<LabelOnGround>();
-            foreach (var desc in visibleDescriptions)
+            try
             {
-                if (desc.Label != null && desc.Entity != null && desc.Label.Address != 0 && IsFittingEntity(desc.Entity))
-                {
-                    result.Add(ConvertToLabelOnGround(desc));
-                }
+                if (label?.Label is not { IsValid: true, Address: > 0 })
+                    continue;
+
+                var entity = label.ItemOnGround;
+                if (entity == null || !entity.IsValid)
+                    continue;
+
+                if (!IsFittingEntity(entity))
+                    continue;
+
+                // Check if opened
+                if (!entity.TryGetComponent<Chest>(out var chestComp))
+                    continue;
+                
+                if (chestComp?.IsOpened == true)
+                    continue;
+
+                result.Add(label);
             }
-            return result.OrderBy(x => x.ItemOnGround?.DistancePlayer ?? float.MaxValue).ToList();
+            catch
+            {
+                // Skip labels that throw during processing
+            }
         }
         
-        return [];
+        return result.OrderBy(x => x.ItemOnGround?.DistancePlayer ?? float.MaxValue).ToList();
     }
 
     private List<LabelOnGround> UpdateDoorList()
@@ -616,24 +635,36 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (!IsItSafeToPickit())
             return [];
 
-        var ui = GameController?.Game?.IngameState?.IngameUi;
+        // Use ItemsOnGroundLabels (not VisibleGroundItemLabels) - includes all labeled entities
+        var labels = GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabels;
+        if (labels == null)
+            return [];
+
+        var result = new List<LabelOnGround>();
         
-        // Use new API: ItemsOnGroundLabelElement.VisibleGroundItemLabels
-        var visibleDescriptions = ui?.ItemsOnGroundLabelElement?.VisibleGroundItemLabels;
-        if (visibleDescriptions != null)
+        foreach (var label in labels)
         {
-            var result = new List<LabelOnGround>();
-            foreach (var desc in visibleDescriptions)
+            try
             {
-                if (desc.Label != null && desc.Entity != null && desc.Label.Address != 0 && IsFittingEntity(desc.Entity))
-                {
-                    result.Add(ConvertToLabelOnGround(desc));
-                }
+                if (label?.Label is not { IsValid: true, Address: > 0 })
+                    continue;
+
+                var entity = label.ItemOnGround;
+                if (entity == null || !entity.IsValid)
+                    continue;
+
+                if (!IsFittingEntity(entity))
+                    continue;
+
+                result.Add(label);
             }
-            return result.OrderBy(x => x.ItemOnGround?.DistancePlayer ?? float.MaxValue).ToList();
+            catch
+            {
+                // Skip labels that throw during processing
+            }
         }
         
-        return [];
+        return result.OrderBy(x => x.ItemOnGround?.DistancePlayer ?? float.MaxValue).ToList();
     }
 
     private List<LabelOnGround> UpdateCorpseList()
@@ -651,24 +682,36 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         if (!IsItSafeToPickit())
             return [];
 
-        var ui = GameController?.Game?.IngameState?.IngameUi;
+        // Use ItemsOnGroundLabels (not VisibleGroundItemLabels) - includes all labeled entities
+        var labels = GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabels;
+        if (labels == null)
+            return [];
+
+        var result = new List<LabelOnGround>();
         
-        // Use new API: ItemsOnGroundLabelElement.VisibleGroundItemLabels
-        var visibleDescriptions = ui?.ItemsOnGroundLabelElement?.VisibleGroundItemLabels;
-        if (visibleDescriptions != null)
+        foreach (var label in labels)
         {
-            var result = new List<LabelOnGround>();
-            foreach (var desc in visibleDescriptions)
+            try
             {
-                if (desc.Label != null && desc.Entity != null && desc.Label.Address != 0 && IsFittingEntity(desc.Entity))
-                {
-                    result.Add(ConvertToLabelOnGround(desc));
-                }
+                if (label?.Label is not { IsValid: true, Address: > 0 })
+                    continue;
+
+                var entity = label.ItemOnGround;
+                if (entity == null || !entity.IsValid)
+                    continue;
+
+                if (!IsFittingEntity(entity))
+                    continue;
+
+                result.Add(label);
             }
-            return result.OrderBy(x => x.ItemOnGround?.DistancePlayer ?? float.MaxValue).ToList();
+            catch
+            {
+                // Skip labels that throw during processing
+            }
         }
         
-        return [];
+        return result.OrderBy(x => x.ItemOnGround?.DistancePlayer ?? float.MaxValue).ToList();
     }
 
     private List<LabelOnGround> UpdatePortalList()
@@ -685,30 +728,49 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 if (path.StartsWith("Metadata/Effects/Microtransactions/Town_Portals/", StringComparison.Ordinal)) return true;
             }
 
-            return entity.HasComponent<Portal>();
+            try
+            {
+                return entity.HasComponent<Portal>();
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         if (!IsItSafeToPickit())
             return [];
 
-        var ui = GameController?.Game?.IngameState?.IngameUi;
+        // Use ItemsOnGroundLabels (not VisibleGroundItemLabels) - includes all labeled entities
+        var labels = GameController?.Game?.IngameState?.IngameUi?.ItemsOnGroundLabels;
+        if (labels == null)
+            return [];
+
+        var result = new List<LabelOnGround>();
         
-        // Use new API: ItemsOnGroundLabelElement.VisibleGroundItemLabels
-        var visibleDescriptions = ui?.ItemsOnGroundLabelElement?.VisibleGroundItemLabels;
-        if (visibleDescriptions != null)
+        foreach (var label in labels)
         {
-            var result = new List<LabelOnGround>();
-            foreach (var desc in visibleDescriptions)
+            try
             {
-                if (desc.Label != null && desc.Entity != null && desc.Label.Address != 0 && IsFittingEntity(desc.Entity))
-                {
-                    result.Add(ConvertToLabelOnGround(desc));
-                }
+                if (label?.Label is not { IsValid: true, Address: > 0 })
+                    continue;
+
+                var entity = label.ItemOnGround;
+                if (entity == null || !entity.IsValid)
+                    continue;
+
+                if (!IsFittingEntity(entity))
+                    continue;
+
+                result.Add(label);
             }
-            return result.OrderBy(x => x.ItemOnGround?.DistancePlayer ?? float.MaxValue).ToList();
+            catch
+            {
+                // Skip labels that throw during processing
+            }
         }
         
-        return [];
+        return result.OrderBy(x => x.ItemOnGround?.DistancePlayer ?? float.MaxValue).ToList();
     }
 
     // Removed label-based UpdateShrineList; shrines are entity-only
@@ -856,35 +918,6 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         }
 
         return true;
-    }
-
-    private static LabelOnGround ConvertToLabelOnGround(ItemsOnGroundLabelElement.VisibleGroundItemDescription desc)
-    {
-        if (desc.Label == null || desc.Entity == null)
-            return null;
-        
-        try
-        {
-            // LabelOnGround has read-only properties, use reflection to set them
-            var label = new LabelOnGround();
-            
-            var labelProp = typeof(LabelOnGround).GetProperty("Label");
-            var itemOnGroundProp = typeof(LabelOnGround).GetProperty("ItemOnGround");
-            
-            if (labelProp != null && itemOnGroundProp != null)
-            {
-                labelProp.SetValue(label, desc.Label);
-                itemOnGroundProp.SetValue(label, desc.Entity);
-                return label;
-            }
-            
-            return null;
-        }
-        catch
-        {
-            // If reflection doesn't work, return null
-            return null;
-        }
     }
 
     private LabelOnGround GetLabel(string id)
