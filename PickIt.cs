@@ -558,23 +558,22 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             return [];
 
         var ui = GameController?.Game?.IngameState?.IngameUi;
-        var visible = ui?.ItemsOnGroundLabelsVisible;
-        if (visible != null)
+        
+        // Use new API: ItemsOnGroundLabelElement.VisibleGroundItemLabels
+        var visibleDescriptions = ui?.ItemsOnGroundLabelElement?.VisibleGroundItemLabels;
+        if (visibleDescriptions != null)
         {
-            return visible
-                .Where(x => x.Address != 0 && x.IsVisible && IsFittingEntity(x.ItemOnGround))
-                .OrderBy(x => x.ItemOnGround.DistancePlayer)
-                .ToList() ?? [];
+            var result = new List<LabelOnGround>();
+            foreach (var desc in visibleDescriptions)
+            {
+                if (desc.Label != null && desc.Entity != null && desc.Label.Address != 0 && IsFittingEntity(desc.Entity))
+                {
+                    result.Add(ConvertToLabelOnGround(desc));
+                }
+            }
+            return result.OrderBy(x => x.ItemOnGround?.DistancePlayer ?? float.MaxValue).ToList();
         }
-
-        var labels = ui?.ItemsOnGroundLabels;
-        if (labels != null)
-        {
-            return labels
-                .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
-                .OrderBy(x => x.ItemOnGround.DistancePlayer)
-                .ToList() ?? [];
-        }
+        
         return [];
     }
 
@@ -593,23 +592,22 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             return [];
 
         var ui = GameController?.Game?.IngameState?.IngameUi;
-        var visible = ui?.ItemsOnGroundLabelsVisible;
-        if (visible != null)
+        
+        // Use new API: ItemsOnGroundLabelElement.VisibleGroundItemLabels
+        var visibleDescriptions = ui?.ItemsOnGroundLabelElement?.VisibleGroundItemLabels;
+        if (visibleDescriptions != null)
         {
-            return visible
-                .Where(x => x.Address != 0 && x.IsVisible && IsFittingEntity(x.ItemOnGround))
-                .OrderBy(x => x.ItemOnGround.DistancePlayer)
-                .ToList() ?? [];
+            var result = new List<LabelOnGround>();
+            foreach (var desc in visibleDescriptions)
+            {
+                if (desc.Label != null && desc.Entity != null && desc.Label.Address != 0 && IsFittingEntity(desc.Entity))
+                {
+                    result.Add(ConvertToLabelOnGround(desc));
+                }
+            }
+            return result.OrderBy(x => x.ItemOnGround?.DistancePlayer ?? float.MaxValue).ToList();
         }
-
-        var labels = ui?.ItemsOnGroundLabels;
-        if (labels != null)
-        {
-            return labels
-                .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
-                .OrderBy(x => x.ItemOnGround.DistancePlayer)
-                .ToList() ?? [];
-        }
+        
         return [];
     }
 
@@ -629,23 +627,22 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             return [];
 
         var ui = GameController?.Game?.IngameState?.IngameUi;
-        var visible = ui?.ItemsOnGroundLabelsVisible;
-        if (visible != null)
+        
+        // Use new API: ItemsOnGroundLabelElement.VisibleGroundItemLabels
+        var visibleDescriptions = ui?.ItemsOnGroundLabelElement?.VisibleGroundItemLabels;
+        if (visibleDescriptions != null)
         {
-            return visible
-                .Where(x => x.Address != 0 && x.IsVisible && IsFittingEntity(x.ItemOnGround))
-                .OrderBy(x => x.ItemOnGround.DistancePlayer)
-                .ToList() ?? [];
+            var result = new List<LabelOnGround>();
+            foreach (var desc in visibleDescriptions)
+            {
+                if (desc.Label != null && desc.Entity != null && desc.Label.Address != 0 && IsFittingEntity(desc.Entity))
+                {
+                    result.Add(ConvertToLabelOnGround(desc));
+                }
+            }
+            return result.OrderBy(x => x.ItemOnGround?.DistancePlayer ?? float.MaxValue).ToList();
         }
-
-        var labels = ui?.ItemsOnGroundLabels;
-        if (labels != null)
-        {
-            return labels
-                .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
-                .OrderBy(x => x.ItemOnGround.DistancePlayer)
-                .ToList() ?? [];
-        }
+        
         return [];
     }
 
@@ -670,23 +667,22 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
             return [];
 
         var ui = GameController?.Game?.IngameState?.IngameUi;
-        var visible = ui?.ItemsOnGroundLabelsVisible;
-        if (visible != null)
+        
+        // Use new API: ItemsOnGroundLabelElement.VisibleGroundItemLabels
+        var visibleDescriptions = ui?.ItemsOnGroundLabelElement?.VisibleGroundItemLabels;
+        if (visibleDescriptions != null)
         {
-            return visible
-                .Where(x => x.Address != 0 && x.IsVisible && IsFittingEntity(x.ItemOnGround))
-                .OrderBy(x => x.ItemOnGround.DistancePlayer)
-                .ToList() ?? [];
+            var result = new List<LabelOnGround>();
+            foreach (var desc in visibleDescriptions)
+            {
+                if (desc.Label != null && desc.Entity != null && desc.Label.Address != 0 && IsFittingEntity(desc.Entity))
+                {
+                    result.Add(ConvertToLabelOnGround(desc));
+                }
+            }
+            return result.OrderBy(x => x.ItemOnGround?.DistancePlayer ?? float.MaxValue).ToList();
         }
-
-        var labels = ui?.ItemsOnGroundLabels;
-        if (labels != null)
-        {
-            return labels
-                .Where(x => x.Address != 0 && IsFittingEntity(x.ItemOnGround))
-                .OrderBy(x => x.ItemOnGround.DistancePlayer)
-                .ToList() ?? [];
-        }
+        
         return [];
     }
 
@@ -835,6 +831,35 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         }
 
         return true;
+    }
+
+    private static LabelOnGround ConvertToLabelOnGround(ItemsOnGroundLabelElement.VisibleGroundItemDescription desc)
+    {
+        if (desc.Label == null || desc.Entity == null)
+            return null;
+        
+        try
+        {
+            // LabelOnGround has read-only properties, use reflection to set them
+            var label = new LabelOnGround();
+            
+            var labelProp = typeof(LabelOnGround).GetProperty("Label");
+            var itemOnGroundProp = typeof(LabelOnGround).GetProperty("ItemOnGround");
+            
+            if (labelProp != null && itemOnGroundProp != null)
+            {
+                labelProp.SetValue(label, desc.Label);
+                itemOnGroundProp.SetValue(label, desc.Entity);
+                return label;
+            }
+            
+            return null;
+        }
+        catch
+        {
+            // If reflection doesn't work, return null
+            return null;
+        }
     }
 
     private LabelOnGround GetLabel(string id)
