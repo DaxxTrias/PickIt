@@ -309,19 +309,41 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
         }
 
         // New: hovered misc auto-click (doors/chests/portals/transitions/corpses) respecting misc toggles
-        if (Settings.AutoClickHoveredMiscInRange.Value && Settings.MiscPickit && GetWorkMode() != WorkMode.Stop)
+        if (Settings.AutoClickHoveredMiscInRange.Value && Settings.MiscPickit)
         {
+            // Auto-click hovered misc should work independently of pickup key state
+            // Only check basic safety conditions
+            if (!GameController.Window.IsForeground() || 
+                !Settings.Enable || 
+                Input.GetKeyState(Keys.Escape))
+            {
+                return;
+            }
+
             var hoverElement = UIHoverWithFallback;
+            
+            if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+            {
+                DebugWindow.LogMsg($"AutoClickMisc: Enabled, HoverElement={(hoverElement != null ? "YES" : "NULL")}, " +
+                    $"InvVisible={GameController?.IngameState?.IngameUi?.InventoryPanel?.IsVisible}, " +
+                    $"Safe={IsItSafeToPickit()}");
+            }
+
             if (hoverElement != null && GameController?.IngameState?.IngameUi?.InventoryPanel is { IsVisible: false } &&
                 !Input.IsKeyDown(Keys.LButton) && IsItSafeToPickit())
             {
                 var hoveredAddr = hoverElement.Address;
                 (LabelOnGround Label, float Dist, bool RequiresDelay)? candidate = null;
 
-                void Consider(System.Collections.Generic.IEnumerable<LabelOnGround> labels, bool enabled, bool requiresDelay)
+                void Consider(System.Collections.Generic.IEnumerable<LabelOnGround> labels, bool enabled, bool requiresDelay, string typeName)
                 {
                     if (!enabled || labels == null) return;
-                    foreach (var l in labels)
+                    var labelsList = labels.ToList();
+                    
+                    if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                        DebugWindow.LogMsg($"  Consider {typeName}: {labelsList.Count} labels");
+                    
+                    foreach (var l in labelsList)
                     {
                         if (l?.Label == null || l.ItemOnGround == null) continue;
                         if (l.Label.Address != hoveredAddr) continue;
@@ -329,14 +351,17 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                         if (dist > Settings.MiscPickitRange) continue;
                         if (!IsLabelClickable(l.Label, null)) continue;
                         candidate = (l, dist, requiresDelay);
+                        
+                        if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
+                            DebugWindow.LogMsg($"  {typeName} MATCHED! dist={dist}");
                         return;
                     }
                 }
 
-                Consider(_doorLabels?.Value, Settings.ClickDoors, false);
-                Consider(_chestLabels?.Value, Settings.ClickChests, false);
-                Consider(_corpseLabels?.Value, Settings.ClickCorpses, false);
-                Consider(_portalLabels?.Value, Settings.ClickPortals, true);
+                Consider(_doorLabels?.Value, Settings.ClickDoors, false, "Doors");
+                Consider(_chestLabels?.Value, Settings.ClickChests, false, "Chests");
+                Consider(_corpseLabels?.Value, Settings.ClickCorpses, false, "Corpses");
+                Consider(_portalLabels?.Value, Settings.ClickPortals, true, "Portals");
                 // Shrines have no labels; handled via entity targeting below
 
                 // Shrine hovered fallback via targeting (labels may be absent for shrines)
