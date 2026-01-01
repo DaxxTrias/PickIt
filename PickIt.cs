@@ -1019,12 +1019,27 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
         // If auto-click-on-hover is enabled and we currently have a hovered item icon,
         // let the lightweight tick-path handle the click to avoid fighting over the cursor.
+        // BUT ONLY defer if the hovered item is actually actionable (in range, matches filter, etc.)
         if (Settings.AutoClickHoveredLootInRange.Value)
         {
             var hoverElement = UIHoverWithFallback;
             var hoverItemIcon = hoverElement?.AsObject<HoverItemIcon>();
             if (hoverItemIcon != null && GameController?.IngameState?.IngameUi?.InventoryPanel is { IsVisible: false })
-                return true;
+            {
+                // Check if the hovered item is actually something hover-looting will click
+                var visibleLabels = GameController?.IngameState?.IngameUi?.ItemsOnGroundLabelElement?.VisibleGroundItemLabels;
+                if (visibleLabels != null)
+                {
+                    var groundDescription = visibleLabels.FirstOrDefault(desc => desc.Label?.Address == hoverItemIcon.Address);
+                    var descEntity = groundDescription.Entity;
+                    if (descEntity != null && descEntity.IsValid && descEntity.DistancePlayer <= Settings.ItemPickitRange)
+                    {
+                        // Only defer if the hovered item is in range - hover system will handle it
+                        return true;
+                    }
+                }
+                // Hovered item is out of range or invalid - allow lazy looting to proceed
+            }
         }
 
         // Also defer to hovered-misc when enabled and a misc label is hovered
