@@ -205,8 +205,8 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
 
                         // Find the ground item description that matches the hovered label address
                         var groundDescription = visibleLabels.FirstOrDefault(desc => desc.Label?.Address == hoverItemIcon.Address);
-                        var descLabel = groundDescription.Label;
-                        var descEntity = groundDescription.Entity;
+                        var descLabel = groundDescription?.Label;
+                        var descEntity = groundDescription?.Entity;
                         if (descLabel == null || descEntity == null || !descEntity.IsValid)
                     {
                         if (Input.GetKeyState(Settings.ProfilerHotkey.Value.Key))
@@ -1031,7 +1031,7 @@ public partial class PickIt : BaseSettingsPlugin<PickItSettings>
                 if (visibleLabels != null)
                 {
                     var groundDescription = visibleLabels.FirstOrDefault(desc => desc.Label?.Address == hoverItemIcon.Address);
-                    var descEntity = groundDescription.Entity;
+                    var descEntity = groundDescription?.Entity;
                     if (descEntity != null && descEntity.IsValid && descEntity.DistancePlayer <= Settings.ItemPickitRange)
                     {
                         // Only defer if the hovered item is in range - hover system will handle it
