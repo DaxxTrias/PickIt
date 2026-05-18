@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0-windows</TargetFramework>
-    <LangVersion>14</LangVersion>
+    <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
     <OutputType>Library</OutputType>
     <UseWindowsForms>true</UseWindowsForms>
